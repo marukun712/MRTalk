@@ -16,6 +16,7 @@ export const meta: MetaFunction = () => {
 
 export async function action({ request }: ActionFunctionArgs) {
     const response = new Response()
+    const url = new URL(request.url);
 
     const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
         request,
@@ -30,13 +31,11 @@ export async function action({ request }: ActionFunctionArgs) {
     await supabase.auth.signInWithOtp({
         email: email,
         options: {
-            emailRedirectTo: 'http://localhost:5173/auth/callback'
+            emailRedirectTo: url.origin + '/auth/callback'
         }
     })
 
-    return redirect(`/auth/verifyOtp?email=${email}`, {
-        headers: response.headers,
-    })
+    return redirect(`/auth/verifyOtp?email=${email}`)
 }
 
 export default function Home() {
@@ -46,7 +45,7 @@ export default function Home() {
         await supabase.auth.signInWithOAuth({
             provider: 'github',
             options: {
-                redirectTo: 'http://localhost:5173/auth/callback',
+                redirectTo: window.location.origin + '/auth/callback',
             },
         })
     }

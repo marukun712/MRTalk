@@ -25,10 +25,9 @@ export async function action({ request }: ActionFunctionArgs) {
         token: otp,
         type: 'email',
     })
-    console.log(data, error)
 
     if (data) {
-        return redirect(`/auth/verifyOtp?email=${email}`, {
+        return redirect(`/home`, {
             headers: response.headers,
         })
     } else {

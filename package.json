@@ -32,6 +32,8 @@
         "isbot": "^4.1.0",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
+        "recast-detour": "^1.6.3",
+        "recastjs": "^0.1.16",
         "shadcn-ui": "^0.8.0",
         "tailwind-merge": "^2.3.0",
         "tailwindcss-animate": "^1.0.7"
