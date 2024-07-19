@@ -20,7 +20,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     if (typeof otp !== "string" || typeof email !== "string") return;
 
-    const { data, error } = await supabase.auth.verifyOtp({
+    const { data } = await supabase.auth.verifyOtp({
         email,
         token: otp,
         type: 'email',

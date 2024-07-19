@@ -24,7 +24,7 @@ export async function loader({ request }: ActionFunctionArgs) {
 
     return await supabase
         .from('characters')
-        .select('id,name, model_url,ending')
+        .select('id,name')
         .eq('postedby', user?.id)
 }
 
@@ -56,21 +56,23 @@ export default function SelectCharacter() {
     const { data } = useLoaderData<typeof loader>();
 
     return (
-        <Form method="post" className="py-10">
-            <Select name="character">
-                <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Select Character" />
-                </SelectTrigger>
-                <SelectContent>
-                    {data?.map((character) => {
-                        return (
-                            <SelectItem value={character.id} key={character.id}>{character.name}</SelectItem>
-                        )
-                    })}
-                </SelectContent>
-            </Select>
+        <div>
+            <Form method="post" className="py-10">
+                <Select name="character">
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Select Character" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {data?.map((character) => {
+                            return (
+                                <SelectItem value={character.id} key={character.id}>{character.name}</SelectItem>
+                            )
+                        })}
+                    </SelectContent>
+                </Select>
 
-            <Button type="submit">Select Character</Button>
-        </Form>
+                <Button type="submit">Select Character</Button>
+            </Form>
+        </div>
     )
 }

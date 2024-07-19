@@ -24,15 +24,15 @@ export default function Babylon() {
         const navigationPlugin = new RecastJSPlugin(recast);
 
         const parameters = {
-            cs: 0.1,  // スケールを小さくして精度を上げる
+            cs: 0.1,
             ch: 0.1,
             walkableSlopeAngle: 35,
-            walkableHeight: 0.1,  // 小さな段差も検出できるように調整
+            walkableHeight: 0.1,
             walkableClimb: 0.1,
             walkableRadius: 0.1,
             maxEdgeLen: 12,
             maxSimplificationError: 1.3,
-            minRegionArea: 0.01,  // 小さな領域も検出
+            minRegionArea: 0.01,
             mergeRegionArea: 0.02,
             maxVertsPerPoly: 6,
             detailSampleDist: 6,
@@ -55,17 +55,17 @@ export default function Babylon() {
         xrFeaturesManager.enableFeature(
             WebXRFeatureName.HAND_TRACKING,
             "latest",
-            { xrInput: true }
+            { xrInput: xrHelper.input, jointMeshes: { enablePhysics: true } }
         ) as WebXRHandTracking;
 
         meshDetector.onMeshAddedObservable.add((mesh) => {
             console.log("Mesh added:", mesh);
-            updateNavMesh(mesh);
+            updateNavMesh(mesh.mesh);
         });
 
         meshDetector.onMeshUpdatedObservable.add((mesh) => {
             console.log("Mesh updated:", mesh);
-            updateNavMesh(mesh);
+            updateNavMesh(mesh.mesh);
         });
 
         meshDetector.onMeshRemovedObservable.add((mesh) => {
@@ -74,11 +74,12 @@ export default function Babylon() {
             if (mesh instanceof TransformNode) {
                 mesh.dispose();
             }
-            updateNavMesh(mesh);
+            updateNavMesh(mesh.mesh);
         });
 
-        function updateNavMesh(mesh: Mesh) {
-            console.log("Run")
+        function updateNavMesh(mesh: Mesh | undefined) {
+            if (!mesh) return;
+
             navigationPlugin.createNavMesh([mesh], parameters);
 
             const navmeshdebug = navigationPlugin.createDebugNavMesh(scene);
