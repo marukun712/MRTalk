@@ -22,7 +22,7 @@ export default function Babylon() {
 
         scene.enablePhysics();
 
-        await import('babylon-vrm-loader')
+        await import('babylonjs-vrm-loader')
 
         const model = await SceneLoader.AppendAsync("./models/", "AliciaSolid.vrm", scene);
 
@@ -41,7 +41,6 @@ export default function Babylon() {
 
         const recast = await Recast();
         const navigationPlugin = new RecastJSPlugin(recast);
-        navigationPlugin.setWorkerURL("workers/navMeshWorker.js");
 
         const parameters = {
             cs: 0.1,
@@ -58,6 +57,21 @@ export default function Babylon() {
             detailSampleDist: 6,
             detailSampleMaxError: 1,
         };
+
+        const agentParameters = {
+            radius: 0.1,
+            height: 0.2,
+            maxAcceleration: 4.0,
+            maxSpeed: 1.0,
+            collisionQueryRange: 0.5,
+            pathOptimizationRange: 0.0,
+            separationWeight: 1.0
+        };
+
+        navigationPlugin.createNavMesh([], parameters);
+
+        const crowd = navigationPlugin.createCrowd(10, 0.1, scene);
+        const agentIndex = crowd.addAgent(vrmManager.rootMesh.position, agentParameters, vrmManager.rootMesh);
 
         const xrHelper = await scene.createDefaultXRExperienceAsync({
             uiOptions: {
@@ -80,7 +94,7 @@ export default function Babylon() {
 
         const createPlaneMaterial = (scene: Scene) => {
             const mat = new StandardMaterial("mat", scene);
-            mat.alpha = 0;
+            mat.alpha = 0.5;
             mat.diffuseColor = Color3.Random();
             return mat;
         };
@@ -116,7 +130,7 @@ export default function Babylon() {
             const navmeshdebug = navigationPlugin.createDebugNavMesh(scene);
             const matdebug = new StandardMaterial("matdebug", scene);
             matdebug.diffuseColor = new Color3(0.1, 0.2, 1);
-            matdebug.alpha = 0.9;
+            matdebug.alpha = 0.3;
             navmeshdebug.material = matdebug;
         }
 
@@ -134,7 +148,6 @@ export default function Babylon() {
                 const newMesh = createPlane(plane, scene, mat);
                 planeMap.set(plane.id, newMesh);
             }
-            updateNavMesh(mesh);
         });
         planeDetector.onPlaneRemovedObservable.add(plane => {
             const mesh = planeMap.get(plane.id);
@@ -142,8 +155,13 @@ export default function Babylon() {
                 mesh.dispose();
                 planeMap.delete(plane.id);
             }
-            updateNavMesh(mesh);
         });
+
+        setInterval(() => {
+            const targetPosition = navigationPlugin.getRandomPointAround(vrmManager.rootMesh.position, 5);
+
+            crowd.agentGoto(agentIndex, targetPosition);
+        }, 3000);
 
         engine.runRenderLoop(() => {
             scene.render();
