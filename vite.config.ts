@@ -6,9 +6,7 @@ import { vercelPreset } from '@vercel/remix/vite';
 export default defineConfig({
     plugins: [
         remix({
-            future: {
-                presets: [vercelPreset()],
-            },
+            presets: [vercelPreset()],
         }),
         tsconfigPaths(),
         {
