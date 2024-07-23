@@ -26,6 +26,7 @@
         "@supabase/supabase-js": "^2.44.2",
         "@types/cannon": "^0.1.12",
         "@types/earcut": "^2.1.4",
+        "@vercel/remix": "^2.10.2",
         "babylon-mmd": "^0.51.0",
         "babylon-vrm-loader": "^2.0.0",
         "cannon": "^0.6.2",
