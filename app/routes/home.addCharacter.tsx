@@ -17,9 +17,9 @@ export async function action({ request }: ActionFunctionArgs) {
     const name = formData.get('name');
     const model_url = formData.get('model_url');
     const ending = formData.get('ending') ? formData.get('ending') : null;
-    const details = formData.get('details') ? formData.get('ending') : null;
+    const details = formData.get('details') ? formData.get('details') : null;
 
-    if (typeof name !== "string" || typeof model_url !== "string" || typeof ending !== "string" || typeof ending !== "string") return;
+    if (typeof name !== "string" || typeof model_url !== "string") return;
 
     const {
         data: { user },

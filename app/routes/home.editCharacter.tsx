@@ -51,7 +51,7 @@ export async function action({ request }: ActionFunctionArgs) {
         const ending = formData.get('ending') ? formData.get('ending') : null;
         const details = formData.get('details') ? formData.get('details') : null;
 
-        if (typeof name !== "string" || typeof model_url !== "string" || typeof ending !== "string" || typeof details !== "string") return;
+        if (typeof name !== "string" || typeof model_url !== "string") return;
 
         return await supabase
             .from('characters')

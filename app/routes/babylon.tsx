@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
-import { Engine, Scene, ArcRotateCamera, HemisphericLight, Vector3, WebXRFeatureName, RecastJSPlugin, Mesh, TransformNode, StandardMaterial, Color3, WebXRHandTracking } from "@babylonjs/core";
+import { Engine, Scene, ArcRotateCamera, HemisphericLight, Vector3, Vector2, Quaternion, WebXRFeatureName, RecastJSPlugin, Mesh, PolygonMeshBuilder, StandardMaterial, Color3, WebXRHandTracking, SceneLoader, Material } from "@babylonjs/core";
 import Recast from "recast-detour";
-import { WebXRMeshDetector } from "@babylonjs/core";
+import { WebXRPlaneDetector, IWebXRPlane } from "@babylonjs/core";
+import cannon from "cannon";
+import earcut from "earcut";
 
 // required imports
 import "@babylonjs/core/Loading/loadingScreen";
@@ -11,17 +13,35 @@ import "@babylonjs/core/Materials/Textures/Loaders/envTextureLoader";
 
 export default function Babylon() {
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const planeMap = new Map<number, Mesh>();
 
     async function createScene() {
         const engine = new Engine(canvasRef.current, true);
         const scene = new Scene(engine);
         const light = new HemisphericLight('light', new Vector3(1, 1, 0), scene);
 
+        scene.enablePhysics();
+
+        await import('babylon-vrm-loader')
+
+        const model = await SceneLoader.AppendAsync("./models/", "AliciaSolid.vrm", scene);
+
+        const vrmManager = model.metadata.vrmManagers[0];
+
+        // Update secondary animation
+        scene.onBeforeRenderObservable.add(() => {
+            vrmManager.update(scene.getEngine().getDeltaTime());
+        });
+
+        // Model Transformation
+        vrmManager.rootMesh.translate(new Vector3(1, 0, 0), 1);
+
         const camera = new ArcRotateCamera('Camera', Math.PI / 4, Math.PI / 3, 8, Vector3.Zero(), scene);
         camera.attachControl(canvasRef.current, true);
 
         const recast = await Recast();
         const navigationPlugin = new RecastJSPlugin(recast);
+        navigationPlugin.setWorkerURL("workers/navMeshWorker.js");
 
         const parameters = {
             cs: 0.1,
@@ -46,11 +66,11 @@ export default function Babylon() {
         });
 
         const xrFeaturesManager = xrHelper.baseExperience.featuresManager;
-        const meshDetector = xrFeaturesManager.enableFeature(
-            WebXRFeatureName.MESH_DETECTION,
+        const planeDetector = xrFeaturesManager.enableFeature(
+            WebXRFeatureName.PLANE_DETECTION,
             "latest",
-            { generateMeshes: true }
-        ) as WebXRMeshDetector;
+            { doNotRemovePlanesOnSessionEnded: true }
+        ) as WebXRPlaneDetector;
 
         xrFeaturesManager.enableFeature(
             WebXRFeatureName.HAND_TRACKING,
@@ -58,26 +78,37 @@ export default function Babylon() {
             { xrInput: xrHelper.input, jointMeshes: { enablePhysics: true } }
         ) as WebXRHandTracking;
 
-        meshDetector.onMeshAddedObservable.add((mesh) => {
-            console.log("Mesh added:", mesh);
-            updateNavMesh(mesh.mesh);
-        });
+        const createPlaneMaterial = (scene: Scene) => {
+            const mat = new StandardMaterial("mat", scene);
+            mat.alpha = 0;
+            mat.diffuseColor = Color3.Random();
+            return mat;
+        };
 
-        meshDetector.onMeshUpdatedObservable.add((mesh) => {
-            console.log("Mesh updated:", mesh);
-            updateNavMesh(mesh.mesh);
-        });
+        const createPlane = (plane: IWebXRPlane, scene: Scene, mat: Material) => {
+            plane.polygonDefinition.push(plane.polygonDefinition[0]);
+            const polygon_triangulation = new PolygonMeshBuilder(
+                "plane_" + plane.id,
+                plane.polygonDefinition.filter(p => p).map(p => new Vector2(p.x, p.z)),
+                scene,
+                earcut,
+            );
+            const polygon = polygon_triangulation.build(false, 0.001);
 
-        meshDetector.onMeshRemovedObservable.add((mesh) => {
-            console.log("Mesh removed:", mesh);
+            polygon.createNormals(false);
 
-            if (mesh instanceof TransformNode) {
-                mesh.dispose();
-            }
-            updateNavMesh(mesh.mesh);
-        });
+            polygon.material = mat;
+            polygon.rotationQuaternion = new Quaternion();
+            plane.transformationMatrix.decompose(
+                polygon.scaling,
+                polygon.rotationQuaternion,
+                polygon.position,
+            );
 
-        function updateNavMesh(mesh: Mesh | undefined) {
+            return polygon;
+        };
+
+        const updateNavMesh = (mesh: Mesh | undefined) => {
             if (!mesh) return;
 
             navigationPlugin.createNavMesh([mesh], parameters);
@@ -85,9 +116,34 @@ export default function Babylon() {
             const navmeshdebug = navigationPlugin.createDebugNavMesh(scene);
             const matdebug = new StandardMaterial("matdebug", scene);
             matdebug.diffuseColor = new Color3(0.1, 0.2, 1);
-            matdebug.alpha = 0.2;
+            matdebug.alpha = 0.9;
             navmeshdebug.material = matdebug;
         }
+
+        planeDetector.onPlaneAddedObservable.add(plane => {
+            const mat = createPlaneMaterial(scene);
+            const mesh = createPlane(plane, scene, mat);
+            planeMap.set(plane.id, mesh);
+            updateNavMesh(mesh);
+        });
+        planeDetector.onPlaneUpdatedObservable.add(plane => {
+            const mesh = planeMap.get(plane.id);
+            const mat = mesh?.material;
+            if (mat) {
+                mesh.dispose();
+                const newMesh = createPlane(plane, scene, mat);
+                planeMap.set(plane.id, newMesh);
+            }
+            updateNavMesh(mesh);
+        });
+        planeDetector.onPlaneRemovedObservable.add(plane => {
+            const mesh = planeMap.get(plane.id);
+            if (mesh) {
+                mesh.dispose();
+                planeMap.delete(plane.id);
+            }
+            updateNavMesh(mesh);
+        });
 
         engine.runRenderLoop(() => {
             scene.render();
@@ -101,6 +157,8 @@ export default function Babylon() {
     }
 
     useEffect(() => {
+        window.CANNON = cannon;
+
         createScene();
     }, []);
 
