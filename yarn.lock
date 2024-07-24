@@ -320,20 +320,6 @@
     "@babel/helper-validator-identifier" "^7.24.7"
     to-fast-properties "^2.0.0"
 
-"@babylonjs/core@5.19.0":
-  version "5.19.0"
-  resolved "https://registry.yarnpkg.com/@babylonjs/core/-/core-5.19.0.tgz#440d4da885dec4db08fa0e43391a287d625236a2"
-  integrity sha512-ZnIxZsyiF4qsmbJiwnAT3E/sqSHmth4TWqqZ8pRPMk1a9K/I6kh2JCn1QY4ant0dnH4zTAJL+4iaYhFzFPiQlg==
-  dependencies:
-    tslib "^2.4.0"
-
-"@babylonjs/loaders@5.19.0":
-  version "5.19.0"
-  resolved "https://registry.yarnpkg.com/@babylonjs/loaders/-/loaders-5.19.0.tgz#910dca25d0c7803380feb5f7c20174322541d864"
-  integrity sha512-8+Crf9udgDS3a70S54wevukJPMsHIMf4FSchwdvMyb5goktNf0T3+fptMe8UVdkmcCztYqIgCkBrUAtHRVQksA==
-  dependencies:
-    tslib "^2.4.0"
-
 "@emotion/hash@^0.9.0":
   version "0.9.1"
   resolved "https://registry.yarnpkg.com/@emotion/hash/-/hash-0.9.1.tgz#4ffb0055f7ef676ebc3a5a91fb621393294e2f43"
@@ -1607,11 +1593,6 @@
   dependencies:
     "@types/ms" "*"
 
-"@types/earcut@^2.1.4":
-  version "2.1.4"
-  resolved "https://registry.yarnpkg.com/@types/earcut/-/earcut-2.1.4.tgz#5811d7d333048f5a7573b22ddc84923e69596da6"
-  integrity sha512-qp3m9PPz4gULB9MhjGID7wpo3gJ4bTGXm7ltNDsmOvsPduTeHp8wSW9YckBj3mljeOh4F0m2z/0JKAALRKbmLQ==
-
 "@types/emscripten@^1.39.6":
   version "1.39.13"
   resolved "https://registry.yarnpkg.com/@types/emscripten/-/emscripten-1.39.13.tgz#afeb1648648dc096efe57983e20387627306e2aa"
@@ -2182,28 +2163,6 @@ axobject-query@~3.1.1:
   integrity sha512-goKlv8DZrK9hUh975fnHzhNIO4jUnFCfv/dszV5VwUGDFjI6vQ2VwoyjYjYNEbBE8AH87TduWP5uyDR1D+Iteg==
   dependencies:
     deep-equal "^2.0.5"
-
-babylon-mmd@^0.51.0:
-  version "0.51.0"
-  resolved "https://registry.yarnpkg.com/babylon-mmd/-/babylon-mmd-0.51.0.tgz#0086e51a2d45693c75bb1cd721c1bd9fd52a0ab8"
-  integrity sha512-JVjiPGqollzjreftKyXfEFgy9abuP67RfVxhCBYdOQUljGojkEpdrf5SVCJ/lFSg+TOa2O6NMWQUyCc3t/qf5w==
-
-babylon-mtoon-material@^5.0.0:
-  version "5.1.1"
-  resolved "https://registry.yarnpkg.com/babylon-mtoon-material/-/babylon-mtoon-material-5.1.1.tgz#50d91d48d1446c25373e5693c85e9b793066126d"
-  integrity sha512-u6R3nKkeXTP9S4TP6ntbVAMxAEZ8S89jiOSj39iW5WMaXOEUcGEbEAUa6crhR4621sDxt5keHje33BNFb6K1ew==
-
-babylon-vrm-loader@^2.0.0:
-  version "2.0.0"
-  resolved "https://registry.yarnpkg.com/babylon-vrm-loader/-/babylon-vrm-loader-2.0.0.tgz#6d67de0b204b5b96597a8eb3cba25ba3816dc5d3"
-  integrity sha512-uxGHQuSK8iBWrMjjbWfdapXb5wo/WHOey9dgeWIgv1YJ7IenM0fVs47RH4deGkU/yPANHFt/cFpyh9u7+TfaHA==
-  dependencies:
-    babylon-mtoon-material "^5.0.0"
-
-babylonjs-vrm-loader@^0.0.9:
-  version "0.0.9"
-  resolved "https://registry.yarnpkg.com/babylonjs-vrm-loader/-/babylonjs-vrm-loader-0.0.9.tgz#35b0cbe10f7b5e9bf716ade95653fad95271e965"
-  integrity sha512-g0chlCP7eXqWLQF0HxfsBmaRb1+sbY6rorCs8w7kt6eOifY/fItrem9nCH+/8iJPmab1z4cXSKYK5qpaLwxvTA==
 
 bail@^2.0.0:
   version "2.0.2"
@@ -2874,11 +2833,6 @@ duplexify@^3.5.0, duplexify@^3.6.0:
     inherits "^2.0.1"
     readable-stream "^2.0.0"
     stream-shift "^1.0.0"
-
-earcut@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/earcut/-/earcut-3.0.0.tgz#a8d5bf891224eaea8287201b5e787c6c0318af89"
-  integrity sha512-41Fs7Q/PLq1SDbqjsgcY7GA42T0jvaCNGXgGtsNdvg+Yv8eIu06bxv4/PoREkZ9nMDNwnUSG9OFB9+yv8eKhDg==
 
 eastasianwidth@^0.2.0:
   version "0.2.0"
@@ -7019,7 +6973,7 @@ tsconfig-paths@^4.0.0, tsconfig-paths@^4.2.0:
     minimist "^1.2.6"
     strip-bom "^3.0.0"
 
-tslib@^2.0.0, tslib@^2.0.1, tslib@^2.1.0, tslib@^2.4.0:
+tslib@^2.0.0, tslib@^2.0.1, tslib@^2.1.0:
   version "2.6.3"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.6.3.tgz#0438f810ad7a9edcde7a241c3d80db693c8cbfe0"
   integrity sha512-xNvxJEOUiWPGhUuUdQgAJPKOOJfGnIyKySOc09XkKsgdUV/3E2zvwZYdejjmRgPCgcym1juLH3226yA7sEFJKQ==

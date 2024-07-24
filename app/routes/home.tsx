@@ -57,7 +57,7 @@ export default function Home() {
     }
 
     return (
-        <div className="m-auto w-1/2 py-14">
+        <div className="m-auto md:w-1/2 w-3/4 py-14">
             <Suspense fallback={<div>Loading...</div>}>
                 <Await resolve={supabase.auth.getUser()}>
                     {(resolvedValue) => {

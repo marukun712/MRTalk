@@ -1,22 +1,7 @@
-import { Form, useLoaderData } from "@remix-run/react"
-import { Button } from "~/components/ui/button"
+import { useLoaderData } from "@remix-run/react"
 import { createServerClient } from "@supabase/auth-helpers-remix"
 import { ActionFunctionArgs } from "@remix-run/node"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "~/components/ui/select"
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-} from "~/components/ui/card"
-import { Await } from "@remix-run/react"
-import { getVRMThumbnail } from "~/utils/VRM/getVRMThumbnail"
+import CharacterCard from "~/components/ui/selectCharacter/CharacterCard"
 
 export async function loader({ request }: ActionFunctionArgs) {
     const response = new Response()
@@ -65,32 +50,15 @@ export default function SelectCharacter() {
 
     return (
         <div>
-            {data?.map((character) => {
-                return (
-                    <Card key={character.id}>
-                        <CardHeader>
-                            hoge
-                        </CardHeader>
-                        <CardContent>
-                            <h1>{character.name}</h1>
-                        </CardContent>
-                        <CardFooter>
-                            <Form method="post">
-                                <Select name="character">
-                                    <SelectTrigger className="w-[180px]">
-                                        <SelectValue placeholder="Select Character" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={character.id} defaultValue={character.id}>{character.name}</SelectItem>
-                                    </SelectContent>
-                                </Select>
-
-                                <Button type="submit">Select Character</Button>
-                            </Form>
-                        </CardFooter>
-                    </Card>
-                )
-            })}
+            <h1 className="font-bold text-3xl py-10">あなたのキャラクター</h1>
+            <div className="md:flex md:flex-wrap-reverse py-5">
+                {data?.map((character) => {
+                    return (
+                        <CharacterCard id={character.id} name={character.name} model_url={character.model_url} key={character.id} />
+                    )
+                })}
+            </div>
         </div>
+
     )
 }

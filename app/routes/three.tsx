@@ -126,7 +126,7 @@ export default function Three() {
                     crowd = new Crowd(navMesh, { maxAgents, maxAgentRadius });
 
                     const navMeshQuery = new NavMeshQuery(navMesh);
-                    const radius = 0.5;
+                    const radius = 0.3;
                     const {
                         randomPoint: initialAgentPosition,
                     } = navMeshQuery.findRandomPointAroundCircle(model!.scene.position, radius);

@@ -12,6 +12,7 @@ export type Database = {
             characters: {
                 Row: {
                     created_at: string
+                    details: string | null
                     ending: string | null
                     id: string
                     model_url: string | null
@@ -20,6 +21,7 @@ export type Database = {
                 }
                 Insert: {
                     created_at?: string
+                    details?: string | null
                     ending?: string | null
                     id?: string
                     model_url?: string | null
@@ -28,6 +30,7 @@ export type Database = {
                 }
                 Update: {
                     created_at?: string
+                    details?: string | null
                     ending?: string | null
                     id?: string
                     model_url?: string | null
