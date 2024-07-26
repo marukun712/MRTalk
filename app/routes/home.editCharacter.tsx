@@ -1,5 +1,5 @@
-import { Form, useLoaderData } from "@remix-run/react";
-import { useState } from "react";
+import { Form, useLoaderData, useActionData } from "@remix-run/react";
+import { useState, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { createServerClient } from "@supabase/auth-helpers-remix";
@@ -11,6 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "~/components/ui/select";
+import { Textarea } from "~/components/ui/textarea"
 
 export async function loader({ request }: ActionFunctionArgs) {
     const response = new Response();
@@ -26,7 +27,7 @@ export async function loader({ request }: ActionFunctionArgs) {
 
     const { data } = await supabase
         .from('characters')
-        .select('id,name,model_url,ending,details')
+        .select('id,name,model_url,firstperson,ending,details')
         .eq('postedby', user?.id);
 
     return { data };
@@ -48,32 +49,38 @@ export async function action({ request }: ActionFunctionArgs) {
     if (editModelId) {
         const name = formData.get('name');
         const model_url = formData.get('model_url');
+        const firstperson = formData.get('firstperson') ? formData.get('firstperson') : null;
         const ending = formData.get('ending') ? formData.get('ending') : null;
         const details = formData.get('details') ? formData.get('details') : null;
 
         if (typeof name !== "string" || typeof model_url !== "string") return;
 
-        return await supabase
+        const { error } = await supabase
             .from('characters')
-            .update({ name, model_url, ending, details })
+            .update({ name, model_url, firstperson, ending, details })
             .eq('id', editModelId);
+        if (!error) return "正常に情報を更新しました！"
     }
 
     if (deleteModelId) {
-        return await supabase
+        const { error } = await supabase
             .from('characters')
             .delete()
             .eq('id', deleteModelId);
+
+        if (!error) return "正常にキャラクターを削除しました！"
     }
 }
 
 export default function EditCharacter() {
     const { data } = useLoaderData<typeof loader>();
     const [selectedCharacter, setSelectedCharacter] = useState("");
+    const result = useActionData<typeof action>();
 
     const [formValues, setFormValues] = useState({
         name: '',
         model_url: '',
+        firstperson: '',
         ending: '',
         details: '',
     });
@@ -86,6 +93,7 @@ export default function EditCharacter() {
         setFormValues({
             name: character?.name || '',
             model_url: character?.model_url || '',
+            firstperson: character?.firstperson || '',
             ending: character?.ending || '',
             details: character?.details || '',
         });
@@ -98,6 +106,11 @@ export default function EditCharacter() {
             [name]: value,
         }));
     };
+
+    useEffect(() => {
+        if (!result) return;
+        alert(result);
+    }, [result])
 
     return (
         <div>
@@ -123,12 +136,16 @@ export default function EditCharacter() {
                     <Input type="text" name="model_url" id="model_url" value={formValues.model_url} onChange={handleInputChange} pattern="https?://\S+" title="URLは、httpsで始まる絶対URLで記入してください。" required />
                 </div>
                 <div>
+                    <label htmlFor="ending">一人称</label>
+                    <Input type="text" name="firstperson" id="firstperson" value={formValues.firstperson} onChange={handleInputChange} />
+                </div>
+                <div>
                     <label htmlFor="ending">語尾</label>
                     <Input type="text" name="ending" id="ending" value={formValues.ending} onChange={handleInputChange} />
                 </div>
                 <div>
                     <label htmlFor="details">詳細設定、指示</label>
-                    <Input type="text" name="details" id="details" value={formValues.details} onChange={handleInputChange} />
+                    <Textarea name="details" id="details" value={formValues.details} onChange={handleInputChange} className="h-36" />
                 </div>
 
                 <Button type="submit">Edit Character</Button>

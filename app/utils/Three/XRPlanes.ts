@@ -3,97 +3,73 @@ import {
     Matrix4,
     Mesh,
     MeshBasicMaterial,
-    Object3D
+    Scene,
+    WebXRManager
 } from 'three';
 
-class XRPlanes extends Object3D {
+export function XRPlanes(xr: WebXRManager, scene: Scene) {
+    const matrix = new Matrix4();
+    const currentPlanes = new Map();
+    const grounds: Mesh[] = new Array();
 
-    constructor(renderer) {
-        super();
+    //平面検出時
+    xr.addEventListener('planesdetected', event => {
+        const frame = event.data;
+        const planes = frame.detectedPlanes;
 
-        const matrix = new Matrix4();
+        const referenceSpace = xr.getReferenceSpace();
 
-        const currentPlanes = new Map();
+        for (const [plane, mesh] of currentPlanes) {
+            //検出から外れたメッシュを削除
+            if (planes.has(plane) === false) {
 
-        const xr = renderer.xr;
+                mesh.geometry.dispose();
+                mesh.material.dispose();
+                scene.remove(mesh);
 
-        xr.addEventListener('planesdetected', event => {
+                currentPlanes.delete(plane);
+            }
+        }
 
-            const frame = event.data;
-            const planes = frame.detectedPlanes;
+        //planeからMeshを生成
+        for (const plane of planes) {
+            if (currentPlanes.has(plane) === false) {
 
-            const referenceSpace = xr.getReferenceSpace();
+                const pose = frame.getPose(plane.planeSpace, referenceSpace);
+                matrix.fromArray(pose.transform.matrix);
 
-            let planeschanged = false;
+                const polygon = plane.polygon;
 
-            for (const [plane, mesh] of currentPlanes) {
+                let minX = Number.MAX_SAFE_INTEGER;
+                let maxX = Number.MIN_SAFE_INTEGER;
+                let minZ = Number.MAX_SAFE_INTEGER;
+                let maxZ = Number.MIN_SAFE_INTEGER;
 
-                if (planes.has(plane) === false) {
-
-                    mesh.geometry.dispose();
-                    mesh.material.dispose();
-                    this.remove(mesh);
-
-                    currentPlanes.delete(plane);
-
-                    planeschanged = true;
-
+                for (const point of polygon) {
+                    minX = Math.min(minX, point.x);
+                    maxX = Math.max(maxX, point.x);
+                    minZ = Math.min(minZ, point.z);
+                    maxZ = Math.max(maxZ, point.z);
                 }
 
+                const width = maxX - minX;
+                const height = maxZ - minZ;
+
+                const geometry = new BoxGeometry(width, 0.01, height);
+                const material = new MeshBasicMaterial({
+                    color: 0xffffff * Math.random(), transparent: true, opacity: 1 //透明度を指定
+                });
+
+                const mesh = new Mesh(geometry, material);
+                mesh.position.setFromMatrixPosition(matrix);
+                mesh.quaternion.setFromRotationMatrix(matrix);
+                scene.add(mesh);
+                grounds.push(mesh); //NavMeshベイク用の配列にpush
+
+                currentPlanes.set(plane, mesh);
             }
+        }
+    });
 
-            for (const plane of planes) {
-
-                if (currentPlanes.has(plane) === false) {
-
-                    const pose = frame.getPose(plane.planeSpace, referenceSpace);
-                    matrix.fromArray(pose.transform.matrix);
-
-                    const polygon = plane.polygon;
-
-                    let minX = Number.MAX_SAFE_INTEGER;
-                    let maxX = Number.MIN_SAFE_INTEGER;
-                    let minZ = Number.MAX_SAFE_INTEGER;
-                    let maxZ = Number.MIN_SAFE_INTEGER;
-
-                    for (const point of polygon) {
-
-                        minX = Math.min(minX, point.x);
-                        maxX = Math.max(maxX, point.x);
-                        minZ = Math.min(minZ, point.z);
-                        maxZ = Math.max(maxZ, point.z);
-
-                    }
-
-                    const width = maxX - minX;
-                    const height = maxZ - minZ;
-
-                    const geometry = new BoxGeometry(width, 0.01, height);
-                    const material = new MeshBasicMaterial({ color: 0xffffff * Math.random() });
-
-                    const mesh = new Mesh(geometry, material);
-                    mesh.position.setFromMatrixPosition(matrix);
-                    mesh.quaternion.setFromRotationMatrix(matrix);
-                    this.add(mesh);
-
-                    currentPlanes.set(plane, mesh);
-
-                    planeschanged = true;
-
-                }
-
-            }
-
-            if (planeschanged) {
-
-                this.dispatchEvent({ type: 'planeschanged' });
-
-            }
-
-        });
-
-    }
-
+    return grounds
 }
-
-export { XRPlanes };

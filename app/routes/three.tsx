@@ -1,18 +1,17 @@
 import { useEffect } from "react";
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
+import { createScene } from "~/utils/Three/createScene";
 import { LoadVRM } from "~/utils/VRM/LoadVRM";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { init, NavMeshQuery, Crowd, CrowdAgent } from 'recast-navigation';
 import { threeToSoloNavMesh } from 'recast-navigation/three';
-import {
-    BoxGeometry,
-    Matrix4,
-    Mesh,
-    MeshBasicMaterial,
-} from 'three';
+import { Mesh } from 'three';
 import { VRM } from "@pixiv/three-vrm";
 import { loadMixamoAnimation } from "~/utils/VRM/loadMixamoAnimation";
+
+import { XRPlanes } from "~/utils/Three/XRPlanes";
+import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
 export default function Three() {
     useEffect(() => {
@@ -28,89 +27,30 @@ export default function Three() {
 
             //AR開始ボタンの作成
             document.body.appendChild(ARButton.createButton(renderer, {
-                requiredFeatures: ['plane-detection'] //plane-detectionを必須に
+                requiredFeatures: ['plane-detection', 'hand-tracking'] //plane-detectionを必須に
             }));
 
-            //シーンの作成
-            const scene = new THREE.Scene();
+            const { scene, camera } = createScene(renderer);
 
-            //カメラを追加
-            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+            const clock = new THREE.Clock();
 
-            //ライトを追加
-            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 3);
-            light.position.set(0.5, 1, 0.25);
-            scene.add(light);
+            const xr = renderer.xr;
 
-            const grounds: Mesh[] = new Array();
+            const grounds: Mesh[] = XRPlanes(xr, scene);
             let crowd: Crowd;
             let agent: CrowdAgent;
 
             let idolAnim: THREE.AnimationClip;
             let walkAnim: THREE.AnimationClip;
 
-            const matrix = new Matrix4();
-            const currentPlanes = new Map();
-            const xr = renderer.xr;
+            let model: GLTF;
+            let currentMixer: THREE.AnimationMixer;
+            let vrm: VRM;
 
-            //平面検出時
-            xr.addEventListener('planesdetected', event => {
-                const frame = event.data;
-                const planes = frame.detectedPlanes;
-
-                const referenceSpace = xr.getReferenceSpace();
-
-                for (const [plane, mesh] of currentPlanes) {
-                    //検出から外れたメッシュを削除
-                    if (planes.has(plane) === false) {
-
-                        mesh.geometry.dispose();
-                        mesh.material.dispose();
-                        scene.remove(mesh);
-
-                        currentPlanes.delete(plane);
-                    }
-                }
-
-                //planeからMeshを生成
-                for (const plane of planes) {
-                    if (currentPlanes.has(plane) === false) {
-
-                        const pose = frame.getPose(plane.planeSpace, referenceSpace);
-                        matrix.fromArray(pose.transform.matrix);
-
-                        const polygon = plane.polygon;
-
-                        let minX = Number.MAX_SAFE_INTEGER;
-                        let maxX = Number.MIN_SAFE_INTEGER;
-                        let minZ = Number.MAX_SAFE_INTEGER;
-                        let maxZ = Number.MIN_SAFE_INTEGER;
-
-                        for (const point of polygon) {
-                            minX = Math.min(minX, point.x);
-                            maxX = Math.max(maxX, point.x);
-                            minZ = Math.min(minZ, point.z);
-                            maxZ = Math.max(maxZ, point.z);
-                        }
-
-                        const width = maxX - minX;
-                        const height = maxZ - minZ;
-
-                        const geometry = new BoxGeometry(width, 0.01, height);
-                        const material = new MeshBasicMaterial({
-                            color: 0xffffff * Math.random(), transparent: true, opacity: 0 //透明度を指定
-                        });
-
-                        const mesh = new Mesh(geometry, material);
-                        mesh.position.setFromMatrixPosition(matrix);
-                        mesh.quaternion.setFromRotationMatrix(matrix);
-                        scene.add(mesh);
-                        grounds.push(mesh); //NavMeshベイク用の配列にpush
-
-                        currentPlanes.set(plane, mesh);
-                    }
-                }
-            });
+            //animation用のパラメータ
+            const params = {
+                timeScale: 1.0,
+            };
 
             //Web XR Session開始時
             xr.addEventListener('sessionstart', start => {
@@ -153,19 +93,7 @@ export default function Three() {
                 }, 5000);
             })
 
-            const params = {
-                timeScale: 1.0,
-            };
-
-            // mixamoアニメーションのLoad
-            async function loadFBX(animationUrl: string, vrm: VRM): Promise<THREE.AnimationClip> {
-                return loadMixamoAnimation(animationUrl, vrm);
-            }
-
-            let model: GLTF;
-            let currentMixer: THREE.AnimationMixer;
-            let vrm: VRM;
-
+            //VRMモデルの設定
             try {
                 model = await LoadVRM("https://pixiv.github.io/three-vrm/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm");
                 vrm = model.userData.vrm;
@@ -178,8 +106,8 @@ export default function Three() {
                 currentMixer = new THREE.AnimationMixer(model.scene)
                 currentMixer.timeScale = params.timeScale;
 
-                idolAnim = await loadFBX("./animations/Standing_Idle.fbx", vrm)
-                walkAnim = await loadFBX("./animations/Walking.fbx", vrm)
+                idolAnim = await loadMixamoAnimation("./animations/Standing_Idle.fbx", vrm)
+                walkAnim = await loadMixamoAnimation("./animations/Walking.fbx", vrm)
             } catch (e) {
                 console.log(e);
             }
@@ -212,7 +140,25 @@ export default function Three() {
                 }
             }, 500)
 
-            const clock = new THREE.Clock();
+            //Questコントローラの設定
+            const controllerModelFactory = new XRControllerModelFactory();
+            const controllerGrip = renderer.xr.getControllerGrip(0);
+            const controllerModel = controllerModelFactory.createControllerModel(controllerGrip);
+
+            controllerGrip.add(controllerModel);
+
+            // 公式に提供されているトリガー、グリップのコールバックイベント
+            controllerGrip.addEventListener('select', (evt) => console.log(evt));
+            controllerGrip.addEventListener('selectstart', (evt) => console.log(evt));
+            controllerGrip.addEventListener('selectend', (evt) => console.log(evt));
+            controllerGrip.addEventListener('squeeze', (evt) => console.log(evt));
+            controllerGrip.addEventListener('squeezestart', (evt) => console.log(evt));
+            controllerGrip.addEventListener('squeezeend', (evt) => console.log(evt));
+
+            controllerGrip.addEventListener('end', (evt) => console.log(evt));
+
+            scene.add(controllerGrip);
+
             function animate() {
                 const deltaTime = clock.getDelta();
 
@@ -238,6 +184,7 @@ export default function Three() {
     }, []);
 
     return (
-        <div></div>
+        <div>
+        </div>
     );
 }

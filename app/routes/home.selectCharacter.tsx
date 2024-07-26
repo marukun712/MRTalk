@@ -1,7 +1,7 @@
 import { useLoaderData } from "@remix-run/react"
 import { createServerClient } from "@supabase/auth-helpers-remix"
 import { ActionFunctionArgs } from "@remix-run/node"
-import CharacterCard from "~/components/ui/selectCharacter/CharacterCard"
+import CharacterCard from "~/components/selectCharacter/CharacterCard"
 
 export async function loader({ request }: ActionFunctionArgs) {
     const response = new Response()
@@ -19,30 +19,6 @@ export async function loader({ request }: ActionFunctionArgs) {
         .from('characters')
         .select('id,name,model_url')
         .eq('postedby', user?.id)
-}
-
-export async function action({ request }: ActionFunctionArgs) {
-    const response = new Response()
-
-    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
-        request,
-        response,
-    })
-
-    const formData = await request.formData();
-
-    const character = formData.get('character');
-
-    if (typeof character !== "string") return;
-
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
-
-    return await supabase
-        .from('profiles')
-        .update({ current_character: character })
-        .eq('id', user?.id)
 }
 
 export default function SelectCharacter() {

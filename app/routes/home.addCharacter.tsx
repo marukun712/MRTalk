@@ -1,8 +1,10 @@
-import { Form } from "@remix-run/react"
+import { Form, useActionData } from "@remix-run/react"
 import { Button } from "~/components/ui/button"
 import { Input } from "~/components/ui/input"
 import { createServerClient } from "@supabase/auth-helpers-remix"
 import { ActionFunctionArgs } from "@remix-run/node"
+import { Textarea } from "~/components/ui/textarea"
+import { useEffect } from "react"
 
 export async function action({ request }: ActionFunctionArgs) {
     const response = new Response()
@@ -16,6 +18,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const name = formData.get('name');
     const model_url = formData.get('model_url');
+    const firstperson = formData.get('firstperson') ? formData.get('firstperson') : null;
     const ending = formData.get('ending') ? formData.get('ending') : null;
     const details = formData.get('details') ? formData.get('details') : null;
 
@@ -25,12 +28,22 @@ export async function action({ request }: ActionFunctionArgs) {
         data: { user },
     } = await supabase.auth.getUser();
 
-    return await supabase
+    const { error } = await supabase
         .from('characters')
-        .insert({ name, model_url, ending, details, postedby: user?.id })
+        .insert({ name, model_url, firstperson, ending, details, postedby: user?.id })
+
+    if (!error) return "正常にキャラクターを追加しました！"
+    return null;
 }
 
 export default function AddCharacter() {
+    const result = useActionData<typeof action>();
+
+    useEffect(() => {
+        if (!result) return;
+        alert(result);
+    }, [result])
+
     return (
         <Form method="post" className="py-10">
             <div>
@@ -42,12 +55,16 @@ export default function AddCharacter() {
                 <Input type="text" name="model_url" id="model_url" pattern="https?://\S+" title="URLは、httpsで始まる絶対URLで記入してください。" required />
             </div>
             <div>
+                <label htmlFor="title">一人称</label>
+                <Input type="text" name="firstperson" id="firstperson" />
+            </div>
+            <div>
                 <label htmlFor="title">語尾</label>
                 <Input type="text" name="ending" id="ending" />
             </div>
             <div>
                 <label htmlFor="title">詳細設定、指示</label>
-                <Input type="text" name="details" id="details" />
+                <Textarea name="details" id="details" className="h-36" />
             </div>
             <Button type="submit">キャラクターを追加</Button>
         </Form>
