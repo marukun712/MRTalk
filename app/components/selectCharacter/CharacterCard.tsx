@@ -29,17 +29,17 @@ export default function CharacterCard(props: Props) {
     }, [props.model_url]);
 
     return (
-        <a href={`../character/${props.id}`} className="md:w-1/4 md:m-5">
+        <a href={`../character/${props.id}`} className="md:w-1/4 h-1/2 md:m-5">
             <Card key={props.id}>
                 <CardHeader>
                     {thumbnail ? (
-                        <img src={thumbnail} alt={`${props.name} thumbnail`} className="w-1/2 h-1/2 m-auto" />
+                        <img src={thumbnail} alt={`${props.name} thumbnail`} className="m-auto" />
                     ) : (
                         <p>Loading image...</p>
                     )}
                 </CardHeader>
                 <CardContent>
-                    <h1 className="text-3xl text-center">{props.name}</h1>
+                    <h1 className="text-2xl text-center">{props.name}</h1>
                 </CardContent>
             </Card>
         </a>

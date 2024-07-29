@@ -1,6 +1,5 @@
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { VRMUtils } from '@pixiv/three-vrm'
-import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin } from '@pixiv/three-vrm';
 import * as THREE from 'three';
 
@@ -32,7 +31,7 @@ export function LoadVRM(path: string): Promise<GLTF> {
 
             (progress: { loaded: number, total: number }) => console.log("Loading model...", 100.0 * (progress.loaded / progress.total), "%"),
 
-            (error: Error) => { reject(error); }
+            (error) => { reject(error); }
         );
     });
 }

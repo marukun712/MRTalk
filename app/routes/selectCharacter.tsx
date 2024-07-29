@@ -25,7 +25,7 @@ export default function SelectCharacter() {
     const { data } = useLoaderData<typeof loader>();
 
     return (
-        <div>
+        <div className="m-auto md:w-1/2 w-3/4 py-14">
             <h1 className="font-bold text-3xl py-10">あなたのキャラクター</h1>
             <div className="md:flex md:flex-wrap-reverse py-5">
                 {data?.map((character) => {

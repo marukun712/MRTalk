@@ -18,7 +18,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
     const name = formData.get('name');
     const model_url = formData.get('model_url');
-    const firstperson = formData.get('firstperson') ? formData.get('firstperson') : null;
+    const firstperson = formData.get('firstperson');
     const ending = formData.get('ending') ? formData.get('ending') : null;
     const details = formData.get('details') ? formData.get('details') : null;
 
@@ -45,28 +45,30 @@ export default function AddCharacter() {
     }, [result])
 
     return (
-        <Form method="post" className="py-10">
-            <div>
-                <label htmlFor="title">キャラクター名</label>
-                <Input type="text" name="name" id="name" required />
-            </div>
-            <div>
-                <label htmlFor="title">モデルURL</label>
-                <Input type="text" name="model_url" id="model_url" pattern="https?://\S+" title="URLは、httpsで始まる絶対URLで記入してください。" required />
-            </div>
-            <div>
-                <label htmlFor="title">一人称</label>
-                <Input type="text" name="firstperson" id="firstperson" />
-            </div>
-            <div>
-                <label htmlFor="title">語尾</label>
-                <Input type="text" name="ending" id="ending" />
-            </div>
-            <div>
-                <label htmlFor="title">詳細設定、指示</label>
-                <Textarea name="details" id="details" className="h-36" />
-            </div>
-            <Button type="submit">キャラクターを追加</Button>
-        </Form>
+        <div className="m-auto md:w-1/2 w-3/4 py-14">
+            <Form method="post" className="py-10">
+                <div>
+                    <label htmlFor="title">キャラクター名</label>
+                    <Input type="text" name="name" id="name" required />
+                </div>
+                <div>
+                    <label htmlFor="title">モデルURL</label>
+                    <Input type="text" name="model_url" id="model_url" pattern="https?://\S+" title="URLは、httpsで始まる絶対URLで記入してください。" required />
+                </div>
+                <div>
+                    <label htmlFor="title">一人称</label>
+                    <Input type="text" name="firstperson" id="firstperson" required />
+                </div>
+                <div>
+                    <label htmlFor="title">語尾</label>
+                    <Input type="text" name="ending" id="ending" />
+                </div>
+                <div>
+                    <label htmlFor="title">詳細設定、指示</label>
+                    <Textarea name="details" id="details" className="h-36" />
+                </div>
+                <Button type="submit">キャラクターを追加</Button>
+            </Form>
+        </div>
     )
 }

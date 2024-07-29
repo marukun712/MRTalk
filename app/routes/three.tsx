@@ -11,10 +11,59 @@ import { VRM } from "@pixiv/three-vrm";
 import { loadMixamoAnimation } from "~/utils/VRM/loadMixamoAnimation";
 
 import { XRPlanes } from "~/utils/Three/XRPlanes";
-import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+
+import { LoaderFunctionArgs } from "@remix-run/node";
+import { createServerClient } from "@supabase/auth-helpers-remix";
+import { useLoaderData } from "@remix-run/react";
+
+interface CharacterData {
+    name: string;
+    ending: string;
+    details: string;
+    firstperson: string;
+    model_url: string;
+}
+
+interface LoaderData {
+    character: CharacterData;
+}
+
+export async function loader({ request }: LoaderFunctionArgs): Promise<{ character: CharacterData } | null> {
+    const response = new Response();
+
+    const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+        request,
+        response,
+    });
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data: profileData } = await supabase
+        .from('profiles')
+        .select('current_character')
+        .eq("id", user.id);
+
+    if (!profileData || profileData.length === 0) return null;
+    const characterID = profileData[0].current_character;
+
+    const { data: characterData } = await supabase
+        .from('characters')
+        .select('name, ending, details, firstperson, model_url')
+        .eq("id", characterID)
+        .single();
+
+    if (!characterData) return null;
+
+    return { character: characterData };
+}
 
 export default function Three() {
+    const data = useLoaderData<LoaderData | null>();
+
     useEffect(() => {
+        if (!data) return;
+
         (async () => {
             await init();
 
@@ -22,40 +71,39 @@ export default function Three() {
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setAnimationLoop(animate);
-            renderer.xr.enabled = true; //WebXRを有効化
+            renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            //AR開始ボタンの作成
             document.body.appendChild(ARButton.createButton(renderer, {
-                requiredFeatures: ['plane-detection', 'hand-tracking'] //plane-detectionを必須に
+                requiredFeatures: ['plane-detection', 'hand-tracking']
             }));
 
             const { scene, camera } = createScene(renderer);
 
             const clock = new THREE.Clock();
-
             const xr = renderer.xr;
-
             const grounds: Mesh[] = XRPlanes(xr, scene);
+
             let crowd: Crowd;
             let agent: CrowdAgent;
-
             let idolAnim: THREE.AnimationClip;
             let walkAnim: THREE.AnimationClip;
-
             let model: GLTF;
-            let currentMixer: THREE.AnimationMixer;
             let vrm: VRM;
+            let currentMixer: THREE.AnimationMixer;
 
-            //animation用のパラメータ
+            let talking = false;
+            let gazeStartTime: number | null = null;
+            const gazeThreshold = 3000; //何ミリ秒間見続けるとAIが話しかけるか
+            let nextTalkStartTime: number;
+            let lastTalkStartTime: number | null = null;
+
             const params = {
                 timeScale: 1.0,
             };
 
-            //Web XR Session開始時
-            xr.addEventListener('sessionstart', start => {
+            function setupCrowd(grounds: Mesh[]): void {
                 setTimeout(() => {
-                    //NavMeshのベイク
                     const { navMesh } = threeToSoloNavMesh(grounds);
 
                     if (!navMesh) return;
@@ -67,11 +115,8 @@ export default function Three() {
 
                     const navMeshQuery = new NavMeshQuery(navMesh);
                     const radius = 0.3;
-                    const {
-                        randomPoint: initialAgentPosition,
-                    } = navMeshQuery.findRandomPointAroundCircle(model!.scene.position, radius);
+                    const { randomPoint: initialAgentPosition } = navMeshQuery.findRandomPointAroundCircle(new THREE.Vector3(), radius);
 
-                    //crowd agentの作成
                     agent = crowd.addAgent(initialAgentPosition, {
                         radius: 0.3,
                         height: 2,
@@ -82,89 +127,117 @@ export default function Three() {
                         separationWeight: 1.0,
                     });
 
-                    //10秒おきにランダムなポイントを設定
                     setInterval(() => {
-                        const {
-                            randomPoint: point,
-                        } = navMeshQuery.findRandomPointAroundCircle(model!.scene.position, 1);
+                        const { randomPoint: point } = navMeshQuery.findRandomPointAroundCircle(new THREE.Vector3(), 1);
                         agent.requestMoveTarget(point);
-                    }, 10000)
-
+                    }, 10000);
                 }, 5000);
-            })
-
-            //VRMモデルの設定
-            try {
-                model = await LoadVRM("https://pixiv.github.io/three-vrm/packages/three-vrm/examples/models/VRM1_Constraint_Twist_Sample.vrm");
-                vrm = model.userData.vrm;
-                scene.add(model.scene);
-
-                model.scene.position.x = 0;
-                model.scene.position.y = -1.5;
-                model.scene.position.z = 0;
-
-                currentMixer = new THREE.AnimationMixer(model.scene)
-                currentMixer.timeScale = params.timeScale;
-
-                idolAnim = await loadMixamoAnimation("./animations/Standing_Idle.fbx", vrm)
-                walkAnim = await loadMixamoAnimation("./animations/Walking.fbx", vrm)
-            } catch (e) {
-                console.log(e);
             }
 
-            setInterval(() => {
-                if (agent) {
+            function updateCrowdAgentMovement(): void {
+                if (agent && !talking) {
                     const agentPosition = new THREE.Vector3(agent.position().x, agent.position().y, agent.position().z);
                     const agentDestination = agent.target();
                     const distanceToTarget = agentPosition.distanceTo(agentDestination);
-                    const thresholdDistance = 0.1; // 距離の閾値
+                    const thresholdDistance = 0.1;
 
                     if (distanceToTarget > thresholdDistance) {
-                        currentMixer.clipAction(walkAnim).play();//歩行モーションを再生
+                        currentMixer.clipAction(walkAnim).play();
                         currentMixer.clipAction(idolAnim).stop();
 
                         const direction = new THREE.Vector3().subVectors(agentDestination, agentPosition).normalize();
                         const targetQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
 
-                        // x軸の回転を無視してy軸の回転のみを設定
                         const euler = new THREE.Euler().setFromQuaternion(targetQuaternion, 'YXZ');
                         euler.x = 0;
                         euler.z = 0;
                         const fixedQuaternion = new THREE.Quaternion().setFromEuler(euler);
 
-                        model.scene.quaternion.slerp(fixedQuaternion, 0.5); // 向きをゆっくり変更
+                        model.scene.quaternion.slerp(fixedQuaternion, 0.5);
                     } else {
-                        currentMixer.clipAction(idolAnim).play();//待機モーションを再生
+                        currentMixer.clipAction(idolAnim).play();
                         currentMixer.clipAction(walkAnim).stop();
                     }
                 }
-            }, 500)
+            }
 
-            //Questコントローラの設定
-            const controllerModelFactory = new XRControllerModelFactory();
-            const controllerGrip = renderer.xr.getControllerGrip(0);
-            const controllerModel = controllerModelFactory.createControllerModel(controllerGrip);
+            xr.addEventListener('sessionstart', () => setupCrowd(grounds));
 
-            controllerGrip.add(controllerModel);
+            const character = data.character;
+            const modelURL = character.model_url;
 
-            // 公式に提供されているトリガー、グリップのコールバックイベント
-            controllerGrip.addEventListener('select', (evt) => console.log(evt));
-            controllerGrip.addEventListener('selectstart', (evt) => console.log(evt));
-            controllerGrip.addEventListener('selectend', (evt) => console.log(evt));
-            controllerGrip.addEventListener('squeeze', (evt) => console.log(evt));
-            controllerGrip.addEventListener('squeezestart', (evt) => console.log(evt));
-            controllerGrip.addEventListener('squeezeend', (evt) => console.log(evt));
+            try {
+                model = await LoadVRM(modelURL);
+                vrm = model.userData.vrm;
+                scene.add(model.scene);
 
-            controllerGrip.addEventListener('end', (evt) => console.log(evt));
+                model.scene.position.set(0, -1.5, 0);
 
-            scene.add(controllerGrip);
+                currentMixer = new THREE.AnimationMixer(model.scene);
+                currentMixer.timeScale = params.timeScale;
+
+                idolAnim = await loadMixamoAnimation("./animations/Standing_Idle.fbx", vrm);
+                walkAnim = await loadMixamoAnimation("./animations/Walking.fbx", vrm);
+            } catch (e) {
+                console.error(e);
+            }
+
+            setInterval(() => updateCrowdAgentMovement(), 500);
+
+            async function requestToOpenAI(): Promise<{ content: string }> {
+                const body = JSON.stringify({
+                    "name": character.name,
+                    "ending": character.ending,
+                    "details": character.details,
+                    "firstpeson": character.firstperson
+                });
+
+                const req = await fetch('/openai', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: body
+                });
+
+                const result = await req.json();
+                return result;
+            }
+
+            async function randomTalk() {
+                if (!lastTalkStartTime || Date.now() > nextTalkStartTime) {
+                    lastTalkStartTime = Date.now();
+                    nextTalkStartTime = lastTalkStartTime + Math.floor(Math.random() * (150 - 40) + 40) * 1000;
+
+                    const res = await requestToOpenAI();
+                    const message = res.content;
+                    console.log(message);
+
+                    talking = true;
+
+                    setTimeout(() => {
+                        talking = false;
+                    }, 20000);
+                }
+            }
+
+            function lookingAtModel(): boolean {
+                const raycaster = new THREE.Raycaster();
+                const rayDirection = new THREE.Vector3();
+
+                const xrCamera = renderer.xr.getCamera();
+                rayDirection.set(0, 0, -1).applyQuaternion(xrCamera.quaternion);
+
+                raycaster.set(xrCamera.position, rayDirection);
+
+                const intersects = raycaster.intersectObjects([model.scene], true);
+                return intersects.length > 0;
+            }
 
             function animate() {
                 const deltaTime = clock.getDelta();
 
-                // if animation is loaded
                 if (currentMixer) {
-                    // update the animation
                     currentMixer.update(deltaTime);
                 }
 
@@ -172,16 +245,48 @@ export default function Three() {
                     vrm.update(deltaTime);
                 }
 
-                if (crowd && agent && model) {
+                if (crowd && agent && model && !talking) {
                     crowd.update(1 / 60.0);
                     const agentPos = agent.position();
                     model.scene.position.set(agentPos.x, -1.5, agentPos.z);
                 }
 
+                if (talking && agent) {
+                    currentMixer.clipAction(walkAnim).stop();
+                    currentMixer.clipAction(idolAnim).play();
+
+                    const agentPosition = new THREE.Vector3(agent.position().x, agent.position().y, agent.position().z);
+                    const userPosition = renderer.xr.getCamera().position;
+
+                    const direction = new THREE.Vector3().subVectors(userPosition, agentPosition).normalize();
+                    const targetQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
+
+                    const euler = new THREE.Euler().setFromQuaternion(targetQuaternion, 'YXZ');
+                    euler.x = 0;
+                    euler.z = 0;
+                    const fixedQuaternion = new THREE.Quaternion().setFromEuler(euler);
+
+                    model.scene.quaternion.slerp(fixedQuaternion, 0.3);
+                }
+
+                if (renderer.xr && model && lookingAtModel()) {
+                    if (!gazeStartTime) {
+                        gazeStartTime = Date.now();
+                    } else {
+                        const gazeDuration = Date.now() - gazeStartTime;
+                        if (gazeDuration > gazeThreshold) {
+                            randomTalk();
+                            gazeStartTime = null;
+                        }
+                    }
+                } else {
+                    gazeStartTime = null;
+                }
+
                 renderer.render(scene, camera);
             }
-        })()
-    }, []);
+        })();
+    }, [data]);
 
     return (
         <div>

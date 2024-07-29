@@ -27,7 +27,7 @@ export async function action({ request }: ActionFunctionArgs) {
     })
 
     if (data) {
-        return redirect(`/home`, {
+        return redirect(`/`, {
             headers: response.headers,
         })
     } else {

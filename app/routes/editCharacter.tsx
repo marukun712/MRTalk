@@ -49,7 +49,7 @@ export async function action({ request }: ActionFunctionArgs) {
     if (editModelId) {
         const name = formData.get('name');
         const model_url = formData.get('model_url');
-        const firstperson = formData.get('firstperson') ? formData.get('firstperson') : null;
+        const firstperson = formData.get('firstperson');
         const ending = formData.get('ending') ? formData.get('ending') : null;
         const details = formData.get('details') ? formData.get('details') : null;
 
@@ -101,6 +101,7 @@ export default function EditCharacter() {
 
     const handleInputChange = (event) => {
         const { name, value } = event.target;
+
         setFormValues((prevValues) => ({
             ...prevValues,
             [name]: value,
@@ -108,12 +109,26 @@ export default function EditCharacter() {
     };
 
     useEffect(() => {
-        if (!result) return;
-        alert(result);
-    }, [result])
+        if (selectedCharacter) {
+            const character = data.find((char) => char.id === selectedCharacter);
+            setFormValues({
+                name: character?.name || '',
+                model_url: character?.model_url || '',
+                firstperson: character?.firstperson || '',
+                ending: character?.ending || '',
+                details: character?.details || '',
+            });
+        }
+    }, [selectedCharacter, data]);
+
+    useEffect(() => {
+        if (result) {
+            alert(result);
+        }
+    }, [result]);
 
     return (
-        <div>
+        <div className="m-auto md:w-1/2 w-3/4 py-14">
             <Form method="post" className="py-10">
                 <Select name="edit" onValueChange={handleSelectChange}>
                     <SelectTrigger className="w-[180px]">
@@ -137,7 +152,7 @@ export default function EditCharacter() {
                 </div>
                 <div>
                     <label htmlFor="ending">一人称</label>
-                    <Input type="text" name="firstperson" id="firstperson" value={formValues.firstperson} onChange={handleInputChange} />
+                    <Input type="text" name="firstperson" id="firstperson" value={formValues.firstperson} onChange={handleInputChange} required />
                 </div>
                 <div>
                     <label htmlFor="ending">語尾</label>
