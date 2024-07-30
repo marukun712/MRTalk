@@ -40,7 +40,8 @@
         "shadcn-ui": "^0.8.0",
         "tailwind-merge": "^2.3.0",
         "tailwindcss-animate": "^1.0.7",
-        "three": "^0.166.1"
+        "three": "^0.166.1",
+        "three-spritetext": "^1.8.2"
     },
     "devDependencies": {
         "@remix-run/dev": "^2.10.0",

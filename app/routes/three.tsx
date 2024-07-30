@@ -9,8 +9,10 @@ import { threeToSoloNavMesh } from 'recast-navigation/three';
 import { Mesh } from 'three';
 import { VRM } from "@pixiv/three-vrm";
 import { loadMixamoAnimation } from "~/utils/VRM/loadMixamoAnimation";
+import SpriteText from 'three-spritetext';
 
 import { XRPlanes } from "~/utils/Three/XRPlanes";
+import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { createServerClient } from "@supabase/auth-helpers-remix";
@@ -66,6 +68,11 @@ export default function Three() {
 
         (async () => {
             await init();
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('getUserMedia is not supported in this browser');
+                // ユーザーへの通知を表示
+                return;
+            }
 
             const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
@@ -86,21 +93,101 @@ export default function Three() {
 
             let crowd: Crowd;
             let agent: CrowdAgent;
+            let navMeshQuery: NavMeshQuery
+
             let idolAnim: THREE.AnimationClip;
             let walkAnim: THREE.AnimationClip;
+
+            let joyAnim: THREE.AnimationClip;
+            let sorrowAnim: THREE.AnimationClip;
+            let angryAnim: THREE.AnimationClip;
+
             let model: GLTF;
             let vrm: VRM;
             let currentMixer: THREE.AnimationMixer;
+            let textbox: SpriteText;
+            let mediaRecorder: MediaRecorder;
+            const audioChunks: any[] = [];
 
             let talking = false;
-            let gazeStartTime: number | null = null;
-            const gazeThreshold = 3000; //何ミリ秒間見続けるとAIが話しかけるか
-            let nextTalkStartTime: number;
-            let lastTalkStartTime: number | null = null;
 
             const params = {
                 timeScale: 1.0,
             };
+
+            async function requestToOpenAI(text: string): Promise<{ content: string, emotion: string }> {
+                const body = JSON.stringify({
+                    "text": text,
+                    "name": character.name,
+                    "ending": character.ending,
+                    "details": character.details,
+                    "firstpeson": character.firstperson
+                });
+
+                const req = await fetch('/openai', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: body
+                });
+
+                const result = await req.json();
+                return result;
+            }
+
+            function resetEmotion() {
+                currentMixer.clipAction(idolAnim).stop();
+                currentMixer.clipAction(walkAnim).stop();
+                currentMixer.clipAction(joyAnim).stop();
+                currentMixer.clipAction(sorrowAnim).stop();
+                currentMixer.clipAction(angryAnim).stop();
+                vrm.expressionManager?.setValue("neutral", 1)
+            }
+
+            //TODO 表情名を調べる
+            function setEmotion(emotion: string) {
+                //モーション、表情の初期化
+                resetEmotion();
+
+                switch (emotion) {
+                    case "fun":
+                        currentMixer.clipAction(idolAnim).play();
+                        vrm.expressionManager?.setValue("fun", 1)
+                        break;
+                    case "joy":
+                        currentMixer.clipAction(joyAnim).play();
+                        vrm.expressionManager?.setValue("joy", 1)
+                        break;
+                    case "sorrow":
+                        currentMixer.clipAction(sorrowAnim).play();
+                        vrm.expressionManager?.setValue("sorrow", 1)
+                        break;
+                    case "angry":
+                        currentMixer.clipAction(angryAnim).play();
+                        vrm.expressionManager?.setValue("angry", 1)
+                        break;
+                }
+            }
+
+            async function talk(text: string) {
+                talking = true;
+                setTimeout(() => {
+                    talking = false;
+
+                    resetEmotion();
+                }, 20000);
+
+                const res = await requestToOpenAI(text);
+                const message = res.content;
+                const emotion = res.emotion;
+
+                setEmotion(emotion);
+                scene.remove(textbox);
+
+                textbox = new SpriteText(message, 0.05);
+                scene.add(textbox);
+            }
 
             function setupCrowd(grounds: Mesh[]): void {
                 setTimeout(() => {
@@ -113,13 +200,13 @@ export default function Three() {
 
                     crowd = new Crowd(navMesh, { maxAgents, maxAgentRadius });
 
-                    const navMeshQuery = new NavMeshQuery(navMesh);
+                    navMeshQuery = new NavMeshQuery(navMesh);
                     const radius = 0.3;
                     const { randomPoint: initialAgentPosition } = navMeshQuery.findRandomPointAroundCircle(new THREE.Vector3(), radius);
 
                     agent = crowd.addAgent(initialAgentPosition, {
                         radius: 0.3,
-                        height: 2,
+                        height: 1.5,
                         maxAcceleration: 4.0,
                         maxSpeed: 0.5,
                         collisionQueryRange: 0.5,
@@ -131,6 +218,8 @@ export default function Three() {
                         const { randomPoint: point } = navMeshQuery.findRandomPointAroundCircle(new THREE.Vector3(), 1);
                         agent.requestMoveTarget(point);
                     }, 10000);
+
+                    setInterval(() => updateCrowdAgentMovement(), 500);
                 }, 5000);
             }
 
@@ -161,7 +250,46 @@ export default function Three() {
                 }
             }
 
-            xr.addEventListener('sessionstart', () => setupCrowd(grounds));
+            xr.addEventListener('sessionstart', async () => {
+                setupCrowd(grounds);
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                    mediaRecorder = new MediaRecorder(stream);
+
+                    mediaRecorder.onstart = () => {
+                        console.log('Recording started');
+                    };
+
+                    mediaRecorder.onerror = (event) => {
+                        console.error('MediaRecorder error:', event.error);
+                    };
+                    mediaRecorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+                    mediaRecorder.onstop = async () => {
+                        const blob = new Blob(audioChunks, { type: "audio/wav" });
+                        console.log(blob)
+
+                        const response = await fetch('/stt', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'audio/wav'
+                            },
+                            body: blob
+                        });
+
+                        const result = await response.json();
+                        console.log(result)
+
+                        if (result) {
+                            talk(result)
+                        }
+                    };
+                } catch (e) {
+                    console.error(e)
+                }
+            });
 
             const character = data.character;
             const modelURL = character.model_url;
@@ -178,61 +306,61 @@ export default function Three() {
 
                 idolAnim = await loadMixamoAnimation("./animations/Standing_Idle.fbx", vrm);
                 walkAnim = await loadMixamoAnimation("./animations/Walking.fbx", vrm);
+                joyAnim = await loadMixamoAnimation("./animations/Jump.fbx", vrm);
+                sorrowAnim = await loadMixamoAnimation("./animations/Sad_Idle.fbx", vrm);
+                angryAnim = await loadMixamoAnimation("./animations/Angry.fbx", vrm);
+
             } catch (e) {
                 console.error(e);
             }
 
-            setInterval(() => updateCrowdAgentMovement(), 500);
-
-            async function requestToOpenAI(): Promise<{ content: string }> {
-                const body = JSON.stringify({
-                    "name": character.name,
-                    "ending": character.ending,
-                    "details": character.details,
-                    "firstpeson": character.firstperson
-                });
-
-                const req = await fetch('/openai', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: body
-                });
-
-                const result = await req.json();
-                return result;
-            }
-
-            async function randomTalk() {
-                if (!lastTalkStartTime || Date.now() > nextTalkStartTime) {
-                    lastTalkStartTime = Date.now();
-                    nextTalkStartTime = lastTalkStartTime + Math.floor(Math.random() * (150 - 40) + 40) * 1000;
-
-                    const res = await requestToOpenAI();
-                    const message = res.content;
-                    console.log(message);
-
-                    talking = true;
-
-                    setTimeout(() => {
-                        talking = false;
-                    }, 20000);
-                }
-            }
-
+            /*
             function lookingAtModel(): boolean {
                 const raycaster = new THREE.Raycaster();
                 const rayDirection = new THREE.Vector3();
-
+    
                 const xrCamera = renderer.xr.getCamera();
                 rayDirection.set(0, 0, -1).applyQuaternion(xrCamera.quaternion);
-
+    
                 raycaster.set(xrCamera.position, rayDirection);
-
+    
                 const intersects = raycaster.intersectObjects([model.scene], true);
                 return intersects.length > 0;
             }
+            */
+
+            const geometry = new THREE.BufferGeometry();
+            geometry.setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, - 5)]);
+
+            const controller1 = renderer.xr.getController(0);
+            controller1.add(new THREE.Line(geometry));
+            scene.add(controller1);
+
+            const controller2 = renderer.xr.getController(1);
+            controller2.add(new THREE.Line(geometry));
+            scene.add(controller2);
+
+            const controllerModelFactory = new XRControllerModelFactory();
+
+            const controllerGrip1 = renderer.xr.getControllerGrip(0);
+            controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
+            scene.add(controllerGrip1);
+
+            const controllerGrip2 = renderer.xr.getControllerGrip(1);
+            controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
+            scene.add(controllerGrip2);
+
+            controllerGrip1.addEventListener('selectstart', (evt) => {
+                console.log(evt)
+                audioChunks.length = 0; // Reset the audioChunks array
+                mediaRecorder.start();
+            });
+            controllerGrip1.addEventListener('selectend', (evt) => {
+                console.log(evt)
+                mediaRecorder.stop();
+            });
+
+            talk("ユーザーに面白い話題を振ってください。");
 
             function animate() {
                 const deltaTime = clock.getDelta();
@@ -251,36 +379,10 @@ export default function Three() {
                     model.scene.position.set(agentPos.x, -1.5, agentPos.z);
                 }
 
-                if (talking && agent) {
-                    currentMixer.clipAction(walkAnim).stop();
-                    currentMixer.clipAction(idolAnim).play();
-
-                    const agentPosition = new THREE.Vector3(agent.position().x, agent.position().y, agent.position().z);
-                    const userPosition = renderer.xr.getCamera().position;
-
-                    const direction = new THREE.Vector3().subVectors(userPosition, agentPosition).normalize();
-                    const targetQuaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
-
-                    const euler = new THREE.Euler().setFromQuaternion(targetQuaternion, 'YXZ');
-                    euler.x = 0;
-                    euler.z = 0;
-                    const fixedQuaternion = new THREE.Quaternion().setFromEuler(euler);
-
-                    model.scene.quaternion.slerp(fixedQuaternion, 0.3);
-                }
-
-                if (renderer.xr && model && lookingAtModel()) {
-                    if (!gazeStartTime) {
-                        gazeStartTime = Date.now();
-                    } else {
-                        const gazeDuration = Date.now() - gazeStartTime;
-                        if (gazeDuration > gazeThreshold) {
-                            randomTalk();
-                            gazeStartTime = null;
-                        }
-                    }
-                } else {
-                    gazeStartTime = null;
+                if (textbox && model) {
+                    textbox.position.x = model.scene.position.x
+                    textbox.position.z = model.scene.position.z
+                    textbox.position.y = model.scene.position.y + 1.7
                 }
 
                 renderer.render(scene, camera);

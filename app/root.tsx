@@ -10,12 +10,14 @@ import {
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 import stylesheet from "~/tailwind.css?url";
+import fontstyle from "~/font.css?url";
 import { useState, useEffect } from "react";
 import { createBrowserClient, createServerClient } from "@supabase/auth-helpers-remix";
 import { LoaderFunctionArgs } from "@remix-run/node";
 
 export const links: LinksFunction = () => [
     { rel: "stylesheet", href: stylesheet },
+    { rel: "stylesheet", href: fontstyle },
 ];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
