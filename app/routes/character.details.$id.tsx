@@ -1,6 +1,6 @@
 import { VRM } from "@pixiv/three-vrm";
 import { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
-import { useActionData, useLoaderData } from "@remix-run/react";
+import { useActionData, useLoaderData, Form, redirect } from "@remix-run/react";
 import { createServerClient } from "@supabase/auth-helpers-remix";
 import { useEffect, useRef } from "react";
 import * as THREE from 'three';
@@ -13,8 +13,8 @@ import {
     AvatarFallback,
     AvatarImage,
 } from "~/components/ui/avatar"
-import { Form } from "@remix-run/react"
 import { Button } from "~/components/ui/button"
+import NotFound from "~/components/ui/404";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
     const response = new Response()
@@ -25,21 +25,25 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         response,
     })
 
+    const {
+        data: { user: currentUser },
+    } = await supabase.auth.getUser();
+
     const { data: character } = await supabase
         .from('characters')
-        .select('id,name,model_url,firstperson,ending,details,postedby')
+        .select('id,name,model_url,ending,details,firstperson,postedby')
         .eq('id', id)
         .single();
 
-    if (!character) return;
+    if (!character) return null;
 
-    const { data: user } = await supabase
+    const { data: userData } = await supabase
         .from('profiles')
         .select('avatar_url,full_name')
         .eq('id', character.postedby)
         .single();
 
-    return { user, character }
+    return { userData, character, currentUser }
 }
 
 export async function action({ params, request }: ActionFunctionArgs) {
@@ -57,10 +61,12 @@ export async function action({ params, request }: ActionFunctionArgs) {
         data: { user },
     } = await supabase.auth.getUser();
 
+    if (!user) return redirect("/login");
+
     const { error } = await supabase
         .from('profiles')
         .update({ current_character: id })
-        .eq('id', user?.id)
+        .eq('id', user.id)
 
     if (!error) return "正常にキャラクターが更新されました！";
 
@@ -73,6 +79,8 @@ export default function Character() {
     const result = useActionData<typeof action>();
 
     useEffect(() => {
+        if (!data) return;
+
         (async () => {
             if (canvasRef.current == null) { return; }
             const renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, alpha: true });
@@ -108,7 +116,7 @@ export default function Character() {
                 currentMixer = new THREE.AnimationMixer(model.scene)
                 currentMixer.timeScale = params.timeScale;
 
-                idolAnim = await loadMixamoAnimation("../animations/Dancing.fbx", vrm)
+                idolAnim = await loadMixamoAnimation("../../animations/Dancing.fbx", vrm)
                 currentMixer.clipAction(idolAnim).play();
             } catch (e) {
                 console.log(e);
@@ -122,9 +130,7 @@ export default function Character() {
                     vrm.update(deltaTime);
                 }
 
-                // if animation is loaded
                 if (currentMixer) {
-                    // update the animation
                     currentMixer.update(deltaTime);
                 }
                 renderer.render(scene, camera);
@@ -138,7 +144,7 @@ export default function Character() {
         alert(result);
     }, [result])
 
-    if (!data || !data.user) return;
+    if (!data || !data.userData) return <NotFound />;
 
     return (
         <div className="m-auto">
@@ -149,15 +155,19 @@ export default function Character() {
                 <h1 className="font-bold text-4xl py-2">{data.character.name}</h1>
                 <div className="flex">
                     <Avatar>
-                        <AvatarImage src={data.user.avatar_url} alt={data.user.full_name} />
-                        <AvatarFallback>{data.user.full_name}</AvatarFallback>
+                        <AvatarImage src={data.userData.avatar_url} alt={data.userData.full_name} />
+                        <AvatarFallback>{data.userData.full_name}</AvatarFallback>
                     </Avatar>
-                    <h1 className="text-gray-400 px-2">{data.user.full_name} が投稿</h1>
+                    <h1 className="text-gray-400 px-2">{data.userData.full_name} が投稿</h1>
                 </div>
 
-                <Form method="post" className="py-5">
-                    <Button type="submit">このキャラクターを使用</Button>
-                </Form>
+                <div className="flex">
+                    <Form method="post" className="py-5">
+                        <Button type="submit">このキャラクターを使用</Button>
+                    </Form>
+
+                    {data.currentUser && data.character.postedby === data.currentUser.id ? <a href={`/character/edit/${data.character.id}`} className="py-5 px-5"><Button>キャラクター情報を編集</Button></a> : ""}
+                </div>
 
                 {data.character.firstperson ? <h1 className="py-2">一人称:{data.character.firstperson}</h1> : ""}
                 {data.character.ending ? <h1 className="py-2">語尾:{data.character.ending}</h1> : ""}

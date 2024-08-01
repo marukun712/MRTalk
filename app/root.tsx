@@ -13,12 +13,20 @@ import stylesheet from "~/tailwind.css?url";
 import fontstyle from "~/font.css?url";
 import { useState, useEffect } from "react";
 import { createBrowserClient, createServerClient } from "@supabase/auth-helpers-remix";
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
+import Header from "./components/ui/header";
 
 export const links: LinksFunction = () => [
     { rel: "stylesheet", href: stylesheet },
     { rel: "stylesheet", href: fontstyle },
 ];
+
+export const meta: MetaFunction = () => {
+    return [
+        { title: "VRMと会話MR" },
+        { name: "description", content: "Welcome to Remix!" },
+    ];
+};
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
     const env = {
@@ -81,7 +89,6 @@ export default function App() {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((event, session) => {
             if (event !== 'INITIAL_SESSION' && session?.access_token !== serverAccessToken) {
-                // server and client are out of sync.
                 revalidate()
             }
         })
@@ -91,5 +98,10 @@ export default function App() {
         }
     }, [serverAccessToken, supabase, revalidate])
 
-    return <Outlet context={{ supabase }} />;
+    return (
+        <div>
+            <Header signin={!!session} supabase={supabase} />
+            <Outlet context={{ supabase }} />
+        </div>
+    )
 }

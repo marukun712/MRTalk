@@ -3,8 +3,9 @@ import { getVRMThumbnail } from "~/utils/VRM/getVRMThumbnail";
 import {
     Card,
     CardContent,
-    CardHeader,
+    CardFooter
 } from "~/components/ui/card"
+import { UserIcon } from 'lucide-react'
 
 type Props = {
     id: string
@@ -29,18 +30,29 @@ export default function CharacterCard(props: Props) {
     }, [props.model_url]);
 
     return (
-        <a href={`../character/${props.id}`} className="md:w-1/4 h-1/2 md:m-5">
-            <Card key={props.id}>
-                <CardHeader>
+        <a href={`../character/details/${props.id}`}>
+            <Card className="bg-background shadow-sm rounded-lg overflow-hidden">
+                <CardContent className="p-0">
                     {thumbnail ? (
-                        <img src={thumbnail} alt={`${props.name} thumbnail`} className="m-auto" />
+                        <img
+                            src={thumbnail}
+                            alt={`${props.name} thumbnail`}
+                            width={400}
+                            height={400}
+                            className="w-full h-48 object-cover"
+                        />
                     ) : (
                         <p>Loading image...</p>
                     )}
-                </CardHeader>
-                <CardContent>
-                    <h1 className="text-2xl text-center">{props.name}</h1>
+
                 </CardContent>
+                <CardFooter className="p-4">
+                    <h3 className="text-lg font-semibold">{props.name}</h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <UserIcon className="w-4 h-4" />
+                        <span>by hogefuga</span>
+                    </div>
+                </CardFooter>
             </Card>
         </a>
     );

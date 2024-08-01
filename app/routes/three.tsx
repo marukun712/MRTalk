@@ -1,9 +1,14 @@
 import { useEffect } from "react";
+import { LoaderFunctionArgs } from "@remix-run/node";
+import { createServerClient } from "@supabase/auth-helpers-remix";
+import { redirect, useLoaderData } from "@remix-run/react";
+
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
 import { createScene } from "~/utils/Three/createScene";
 import { LoadVRM } from "~/utils/VRM/LoadVRM";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
+
 import { init, NavMeshQuery, Crowd, CrowdAgent } from 'recast-navigation';
 import { threeToSoloNavMesh } from 'recast-navigation/three';
 import { Mesh } from 'three';
@@ -14,23 +19,9 @@ import SpriteText from 'three-spritetext';
 import { XRPlanes } from "~/utils/Three/XRPlanes";
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
-import { LoaderFunctionArgs } from "@remix-run/node";
-import { createServerClient } from "@supabase/auth-helpers-remix";
-import { useLoaderData } from "@remix-run/react";
+import { VOICEVOXTTS } from "~/utils/AIChat/VOICEVOX";
 
-interface CharacterData {
-    name: string;
-    ending: string;
-    details: string;
-    firstperson: string;
-    model_url: string;
-}
-
-interface LoaderData {
-    character: CharacterData;
-}
-
-export async function loader({ request }: LoaderFunctionArgs): Promise<{ character: CharacterData } | null> {
+export async function loader({ request }: LoaderFunctionArgs) {
     const response = new Response();
 
     const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
@@ -39,7 +30,7 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<{ charact
     });
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    if (!user) return redirect("/login");
 
     const { data: profileData } = await supabase
         .from('profiles')
@@ -51,7 +42,7 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<{ charact
 
     const { data: characterData } = await supabase
         .from('characters')
-        .select('name, ending, details, firstperson, model_url')
+        .select('id,name,model_url,ending,details,firstperson,postedby')
         .eq("id", characterID)
         .single();
 
@@ -61,7 +52,7 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<{ charact
 }
 
 export default function Three() {
-    const data = useLoaderData<LoaderData | null>();
+    const data = useLoaderData<typeof loader>();
 
     useEffect(() => {
         if (!data) return;
@@ -70,7 +61,6 @@ export default function Three() {
             await init();
             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                 console.error('getUserMedia is not supported in this browser');
-                // ユーザーへの通知を表示
                 return;
             }
 
@@ -121,7 +111,7 @@ export default function Three() {
                     "name": character.name,
                     "ending": character.ending,
                     "details": character.details,
-                    "firstpeson": character.firstperson
+                    "firstperson": character.firstperson
                 });
 
                 const req = await fetch('/openai', {
@@ -142,7 +132,7 @@ export default function Three() {
                 currentMixer.clipAction(joyAnim).stop();
                 currentMixer.clipAction(sorrowAnim).stop();
                 currentMixer.clipAction(angryAnim).stop();
-                vrm.expressionManager?.setValue("neutral", 1)
+                vrm.expressionManager?.setValue("neutral", 1);
             }
 
             //TODO 表情名を調べる
@@ -153,15 +143,15 @@ export default function Three() {
                 switch (emotion) {
                     case "fun":
                         currentMixer.clipAction(idolAnim).play();
-                        vrm.expressionManager?.setValue("fun", 1)
+                        vrm.expressionManager?.setValue("happy", 1)
                         break;
                     case "joy":
                         currentMixer.clipAction(joyAnim).play();
-                        vrm.expressionManager?.setValue("joy", 1)
+                        vrm.expressionManager?.setValue("happy", 1)
                         break;
                     case "sorrow":
                         currentMixer.clipAction(sorrowAnim).play();
-                        vrm.expressionManager?.setValue("sorrow", 1)
+                        vrm.expressionManager?.setValue("sad", 1)
                         break;
                     case "angry":
                         currentMixer.clipAction(angryAnim).play();
@@ -181,6 +171,7 @@ export default function Three() {
                 const res = await requestToOpenAI(text);
                 const message = res.content;
                 const emotion = res.emotion;
+                VOICEVOXTTS(res.content)
 
                 setEmotion(emotion);
                 scene.remove(textbox);
@@ -252,6 +243,38 @@ export default function Three() {
 
             xr.addEventListener('sessionstart', async () => {
                 setupCrowd(grounds);
+
+                const geometry = new THREE.BufferGeometry();
+                geometry.setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, - 5)]);
+
+                const controller1 = renderer.xr.getController(0);
+                controller1.add(new THREE.Line(geometry));
+                scene.add(controller1);
+
+                const controller2 = renderer.xr.getController(1);
+                controller2.add(new THREE.Line(geometry));
+                scene.add(controller2);
+
+                const controllerModelFactory = new XRControllerModelFactory();
+
+                const controllerGrip1 = renderer.xr.getControllerGrip(0);
+                controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
+                scene.add(controllerGrip1);
+
+                const controllerGrip2 = renderer.xr.getControllerGrip(1);
+                controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
+                scene.add(controllerGrip2);
+
+                controllerGrip1.addEventListener('selectstart', (evt) => {
+                    console.log(evt)
+                    audioChunks.length = 0;
+                    mediaRecorder.start();
+                });
+                controllerGrip1.addEventListener('selectend', (evt) => {
+                    console.log(evt)
+                    mediaRecorder.stop();
+                });
+
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
@@ -328,39 +351,6 @@ export default function Three() {
                 return intersects.length > 0;
             }
             */
-
-            const geometry = new THREE.BufferGeometry();
-            geometry.setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, - 5)]);
-
-            const controller1 = renderer.xr.getController(0);
-            controller1.add(new THREE.Line(geometry));
-            scene.add(controller1);
-
-            const controller2 = renderer.xr.getController(1);
-            controller2.add(new THREE.Line(geometry));
-            scene.add(controller2);
-
-            const controllerModelFactory = new XRControllerModelFactory();
-
-            const controllerGrip1 = renderer.xr.getControllerGrip(0);
-            controllerGrip1.add(controllerModelFactory.createControllerModel(controllerGrip1));
-            scene.add(controllerGrip1);
-
-            const controllerGrip2 = renderer.xr.getControllerGrip(1);
-            controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
-            scene.add(controllerGrip2);
-
-            controllerGrip1.addEventListener('selectstart', (evt) => {
-                console.log(evt)
-                audioChunks.length = 0; // Reset the audioChunks array
-                mediaRecorder.start();
-            });
-            controllerGrip1.addEventListener('selectend', (evt) => {
-                console.log(evt)
-                mediaRecorder.stop();
-            });
-
-            talk("ユーザーに面白い話題を振ってください。");
 
             function animate() {
                 const deltaTime = clock.getDelta();
