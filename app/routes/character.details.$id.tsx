@@ -43,7 +43,13 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
         .eq('id', character.postedby)
         .single();
 
-    return { userData, character, currentUser }
+    const { data: favoriteData } = await supabase
+        .from('favorites')
+        .select('*')
+        .eq('model_id', character.id)
+        .single();
+
+    return { userData, character, currentUser, favoriteData }
 }
 
 export async function action({ params, request }: ActionFunctionArgs) {
@@ -61,14 +67,42 @@ export async function action({ params, request }: ActionFunctionArgs) {
 
     if (!user) return redirect("/login");
 
-    const { error } = await supabase
-        .from('profiles')
-        .update({ current_character: id })
-        .eq('id', user.id)
+    const formData = await request.formData();
+    const action = formData.get('action');
 
-    if (!error) return "正常にキャラクターが更新されました！";
+    if (action === 'favorite') {
+        const { error } = await supabase
+            .from('favorites')
+            .insert({ model_id: id })
 
-    return null;
+        if (!error) return "お気に入りに追加されました!";
+
+        return null;
+    }
+
+    if (action === 'deleteFavorite') {
+        const model_id = formData.get('id');
+
+        const { error } = await supabase
+            .from('favorites')
+            .delete()
+            .eq('model_id', model_id)
+
+        if (!error) return "お気に入りから削除されました!";
+
+        return null;
+    }
+
+    if (action === 'use') {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ current_character: id })
+            .eq('id', user.id)
+
+        if (!error) return "正常にキャラクターが更新されました！";
+
+        return null;
+    }
 }
 
 export default function Character() {
@@ -162,7 +196,21 @@ export default function Character() {
                 </div>
 
                 <div className="flex">
+                    {data.favoriteData ?
+                        <Form method="post" className="py-5 px-5">
+                            <input type="hidden" name="action" value="deleteFavorite" />
+                            <input type="hidden" name="id" value={data.character.id} />
+
+                            <Button type="submit">お気に入りから削除</Button>
+                        </Form>
+                        : <Form method="post" className="py-5 px-5">
+                            <input type="hidden" name="action" value="favorite" />
+                            <Button type="submit">お気に入りに追加</Button>
+                        </Form>}
+
+
                     <Form method="post" className="py-5">
+                        <input type="hidden" name="action" value="use" />
                         <Button type="submit">このキャラクターを使用</Button>
                     </Form>
 
