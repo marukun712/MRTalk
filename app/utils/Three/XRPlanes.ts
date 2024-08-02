@@ -57,7 +57,7 @@ export function XRPlanes(xr: WebXRManager, scene: Scene) {
 
                 const geometry = new BoxGeometry(width, 0.01, height);
                 const material = new MeshBasicMaterial({
-                    color: 0xffffff * Math.random(), transparent: true, opacity: 0.4 //透明度を指定
+                    color: 0xffffff * Math.random(), transparent: true, opacity: 0 //透明度を指定
                 });
 
                 const mesh = new Mesh(geometry, material);

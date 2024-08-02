@@ -6,7 +6,7 @@ import {
     ScrollRestoration,
     json,
     useLoaderData,
-    useRevalidator
+    useRevalidator,
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 import stylesheet from "~/tailwind.css?url";
@@ -15,6 +15,7 @@ import { useState, useEffect } from "react";
 import { createBrowserClient, createServerClient } from "@supabase/auth-helpers-remix";
 import { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import Header from "./components/ui/header";
+import NotFound from "./components/ui/404";
 
 export const links: LinksFunction = () => [
     { rel: "stylesheet", href: stylesheet },
@@ -45,10 +46,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         data: { session },
     } = await supabase.auth.getSession()
 
+    const {
+        data: { user },
+    } = await supabase.auth.getUser()
     return json(
         {
             env,
             session,
+            user
         },
         {
             headers: response.headers,
@@ -75,7 +80,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-    const { env, session } = useLoaderData<typeof loader>()
+    const { env, session, user } = useLoaderData<typeof loader>()
     const { revalidate } = useRevalidator()
 
     const [supabase] = useState(() =>
@@ -100,8 +105,28 @@ export default function App() {
 
     return (
         <div>
-            <Header signin={!!session} supabase={supabase} />
+            <Header signin={!!session} supabase={supabase} user={user!} />
             <Outlet context={{ supabase }} />
         </div>
     )
+}
+
+export function ErrorBoundary() {
+
+    return (
+        <html lang="jp">
+            <head>
+                <meta charSet="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <Meta />
+                <Links />
+            </head>
+            <body>
+                <h1>
+                    <NotFound />
+                </h1>
+                <Scripts />
+            </body>
+        </html>
+    );
 }

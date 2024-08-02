@@ -21,6 +21,8 @@ import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFa
 
 import { VOICEVOXTTS } from "~/utils/AIChat/VOICEVOX";
 
+import { CrowdHelper } from 'recast-navigation/three';
+
 export async function loader({ request }: LoaderFunctionArgs) {
     const response = new Response();
 
@@ -97,7 +99,8 @@ export default function Three() {
             let currentMixer: THREE.AnimationMixer;
             let textbox: SpriteText;
             let mediaRecorder: MediaRecorder;
-            const audioChunks: any[] = [];
+            let crowdHelper: CrowdHelper;
+            const audioChunks: Blob[] = [];
 
             let talking = false;
 
@@ -132,7 +135,10 @@ export default function Three() {
                 currentMixer.clipAction(joyAnim).stop();
                 currentMixer.clipAction(sorrowAnim).stop();
                 currentMixer.clipAction(angryAnim).stop();
-                vrm.expressionManager?.setValue("neutral", 1);
+                vrm.expressionManager?.setValue("happy", 0)
+                vrm.expressionManager?.setValue("sad", 0)
+                vrm.expressionManager?.setValue("angry", 0)
+                vrm.expressionManager?.setValue("neutral", 1)
             }
 
             //TODO 表情名を調べる
@@ -143,7 +149,6 @@ export default function Three() {
                 switch (emotion) {
                     case "fun":
                         currentMixer.clipAction(idolAnim).play();
-                        vrm.expressionManager?.setValue("happy", 1)
                         break;
                     case "joy":
                         currentMixer.clipAction(joyAnim).play();
@@ -160,6 +165,13 @@ export default function Three() {
                 }
             }
 
+            function addFukidashi(text: string) {
+                scene.remove(textbox);
+
+                textbox = new SpriteText(text, 0.05);
+                scene.add(textbox);
+            }
+
             async function talk(text: string) {
                 talking = true;
                 setTimeout(() => {
@@ -167,6 +179,9 @@ export default function Three() {
 
                     resetEmotion();
                 }, 20000);
+                const xrCamera = renderer.xr.getCamera();
+                model.scene.lookAt(xrCamera.position.x, model.scene.position.y, xrCamera.position.z);
+                addFukidashi("loading...")
 
                 const res = await requestToOpenAI(text);
                 const message = res.content;
@@ -174,10 +189,7 @@ export default function Three() {
                 VOICEVOXTTS(res.content)
 
                 setEmotion(emotion);
-                scene.remove(textbox);
-
-                textbox = new SpriteText(message, 0.05);
-                scene.add(textbox);
+                addFukidashi(message)
             }
 
             function setupCrowd(grounds: Mesh[]): void {
@@ -197,13 +209,17 @@ export default function Three() {
 
                     agent = crowd.addAgent(initialAgentPosition, {
                         radius: 0.3,
-                        height: 1.5,
+                        height: 1.3,
                         maxAcceleration: 4.0,
                         maxSpeed: 0.5,
                         collisionQueryRange: 0.5,
                         pathOptimizationRange: 0.0,
                         separationWeight: 1.0,
                     });
+
+                    crowdHelper = new CrowdHelper({ crowd });
+
+                    scene.add(crowdHelper);
 
                     setInterval(() => {
                         const { randomPoint: point } = navMeshQuery.findRandomPointAroundCircle(new THREE.Vector3(), 1);
@@ -217,7 +233,8 @@ export default function Three() {
             function updateCrowdAgentMovement(): void {
                 if (agent && !talking) {
                     const agentPosition = new THREE.Vector3(agent.position().x, agent.position().y, agent.position().z);
-                    const agentDestination = agent.target();
+                    const agentDestination = new THREE.Vector3(agent.target().x, agent.target().y, agent.target().z);
+
                     const distanceToTarget = agentPosition.distanceTo(agentDestination);
                     const thresholdDistance = 0.1;
 
@@ -268,11 +285,13 @@ export default function Three() {
                 controllerGrip1.addEventListener('selectstart', (evt) => {
                     console.log(evt)
                     audioChunks.length = 0;
+                    addFukidashi("録音中...")
                     mediaRecorder.start();
                 });
                 controllerGrip1.addEventListener('selectend', (evt) => {
                     console.log(evt)
                     mediaRecorder.stop();
+                    addFukidashi("録音完了 返答を生成中...")
                 });
 
                 try {
@@ -284,9 +303,6 @@ export default function Three() {
                         console.log('Recording started');
                     };
 
-                    mediaRecorder.onerror = (event) => {
-                        console.error('MediaRecorder error:', event.error);
-                    };
                     mediaRecorder.ondataavailable = event => {
                         audioChunks.push(event.data);
                     };
@@ -337,21 +353,6 @@ export default function Three() {
                 console.error(e);
             }
 
-            /*
-            function lookingAtModel(): boolean {
-                const raycaster = new THREE.Raycaster();
-                const rayDirection = new THREE.Vector3();
-    
-                const xrCamera = renderer.xr.getCamera();
-                rayDirection.set(0, 0, -1).applyQuaternion(xrCamera.quaternion);
-    
-                raycaster.set(xrCamera.position, rayDirection);
-    
-                const intersects = raycaster.intersectObjects([model.scene], true);
-                return intersects.length > 0;
-            }
-            */
-
             function animate() {
                 const deltaTime = clock.getDelta();
 
@@ -363,10 +364,14 @@ export default function Three() {
                     vrm.update(deltaTime);
                 }
 
+                if (crowdHelper) {
+                    crowdHelper.update();
+                }
+
                 if (crowd && agent && model && !talking) {
                     crowd.update(1 / 60.0);
                     const agentPos = agent.position();
-                    model.scene.position.set(agentPos.x, -1.5, agentPos.z);
+                    model.scene.position.set(agentPos.x, agentPos.y - 0.3, agentPos.z);
                 }
 
                 if (textbox && model) {

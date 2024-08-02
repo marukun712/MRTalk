@@ -55,8 +55,6 @@ export async function action({ params, request }: ActionFunctionArgs) {
         response,
     })
 
-    if (typeof id !== "string") return;
-
     const {
         data: { user },
     } = await supabase.auth.getUser();

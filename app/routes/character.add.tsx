@@ -2,7 +2,7 @@ import { Form } from "@remix-run/react"
 import { Button } from "~/components/ui/button"
 import { Input } from "~/components/ui/input"
 import { createServerClient } from "@supabase/auth-helpers-remix"
-import { ActionFunctionArgs, redirect } from "@remix-run/node"
+import { ActionFunctionArgs, LoaderFunctionArgs, redirect } from "@remix-run/node"
 import { Textarea } from "~/components/ui/textarea"
 import {
     Select,
@@ -12,7 +12,7 @@ import {
     SelectValue,
 } from "~/components/ui/select";
 
-export async function loader({ request }: ActionFunctionArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
     const response = new Response()
 
     const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
@@ -66,7 +66,7 @@ export default function AddCharacter() {
 
     return (
         <div className="m-auto md:w-1/2 w-3/4 py-14">
-            <h1 className="font-bold text-3xl py-10">キャラクターを追加</h1>
+            <h1 className="font-bold text-3xl py-10 text-center">キャラクターを追加</h1>
 
             <Form method="post" className="py-10">
                 <div>

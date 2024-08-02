@@ -2,7 +2,7 @@ import { Form, useLoaderData, redirect } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { createServerClient } from "@supabase/auth-helpers-remix";
-import { ActionFunctionArgs } from "@remix-run/node";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import {
     Select,
     SelectContent,
@@ -13,7 +13,7 @@ import {
 import { Textarea } from "~/components/ui/textarea"
 import NotFound from "~/components/ui/404";
 
-export async function loader({ params, request }: ActionFunctionArgs) {
+export async function loader({ params, request }: LoaderFunctionArgs) {
     const response = new Response();
     const id = params.id;
 

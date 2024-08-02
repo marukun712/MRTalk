@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { Button } from "~/components/ui/button";
 import { useOutletContext, Form } from "@remix-run/react";
 import { Input } from "~/components/ui/input";
@@ -6,7 +6,7 @@ import { createServerClient, SupabaseClient } from "@supabase/auth-helpers-remix
 import { Database } from "database.types";
 import { redirect } from '@remix-run/node'
 
-export async function loader({ request }: ActionFunctionArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
     const response = new Response();
 
     const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {

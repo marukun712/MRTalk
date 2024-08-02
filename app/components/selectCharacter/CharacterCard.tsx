@@ -6,15 +6,21 @@ import {
     CardFooter
 } from "~/components/ui/card"
 import { UserIcon } from 'lucide-react'
+import { useOutletContext } from "@remix-run/react";
+import { SupabaseClient } from "@supabase/supabase-js";
+import { Database } from "database.types";
 
 type Props = {
     id: string
     name: string
     model_url: string
+    postedby: string
 }
 
 export default function CharacterCard(props: Props) {
     const [thumbnail, setThumbnail] = useState<string>("");
+    const [postedBy, setPostedBy] = useState<string>("");
+    const { supabase } = useOutletContext<{ supabase: SupabaseClient<Database> }>();
 
     useEffect(() => {
         const fetchThumbnail = async () => {
@@ -27,7 +33,22 @@ export default function CharacterCard(props: Props) {
         };
 
         fetchThumbnail();
-    }, [props.model_url]);
+
+        const fetchUserName = async () => {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', props.postedby)
+                .single()
+
+            if (error || data.full_name == null) return;
+
+            setPostedBy(data.full_name)
+        };
+
+        fetchUserName();
+
+    }, [props.model_url, props.postedby]);
 
     return (
         <a href={`../character/details/${props.id}`}>
@@ -50,7 +71,7 @@ export default function CharacterCard(props: Props) {
                     <h3 className="text-lg font-semibold">{props.name}</h3>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <UserIcon className="w-4 h-4" />
-                        <span>by hogefuga</span>
+                        <span>by {postedBy}</span>
                     </div>
                 </CardFooter>
             </Card>

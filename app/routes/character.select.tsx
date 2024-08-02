@@ -1,9 +1,9 @@
 import { useLoaderData, redirect } from "@remix-run/react"
 import { createServerClient } from "@supabase/auth-helpers-remix"
-import { ActionFunctionArgs } from "@remix-run/node"
+import { LoaderFunctionArgs } from "@remix-run/node"
 import CharacterCard from "~/components/selectCharacter/CharacterCard"
 
-export async function loader({ request }: ActionFunctionArgs) {
+export async function loader({ request }: LoaderFunctionArgs) {
     const response = new Response()
 
     const supabase = createServerClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
@@ -19,7 +19,7 @@ export async function loader({ request }: ActionFunctionArgs) {
 
     return await supabase
         .from('characters')
-        .select('id,name,model_url')
+        .select('id,name,model_url,postedby')
         .eq('postedby', user.id)
 }
 
@@ -32,11 +32,10 @@ export default function SelectCharacter() {
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
                 {data?.map((character) => {
                     return (
-                        <CharacterCard id={character.id} name={character.name} model_url={character.model_url} key={character.id} />
+                        <CharacterCard id={character.id} name={character.name} model_url={character.model_url} key={character.id} postedby={character.postedby} />
                     )
                 })}
             </div>
         </div>
-
     )
 }
