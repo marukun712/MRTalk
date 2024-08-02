@@ -39,7 +39,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
     const { data: userData } = await supabase
         .from('profiles')
-        .select('avatar_url,full_name')
+        .select('id,avatar_url,full_name')
         .eq('id', character.postedby)
         .single();
 
@@ -151,12 +151,14 @@ export default function Character() {
             <br className="py-2"></br>
             <div className="px-96">
                 <h1 className="font-bold text-4xl py-2">{data.character.name}</h1>
-                <div className="flex">
-                    <Avatar>
-                        <AvatarImage src={data.userData.avatar_url} alt={data.userData.full_name} />
-                        <AvatarFallback>{data.userData.full_name}</AvatarFallback>
-                    </Avatar>
-                    <h1 className="text-gray-400 px-2">{data.userData.full_name} が投稿</h1>
+                <div>
+                    <a href={`/profile/${data.userData.id}`} className="flex">
+                        <Avatar>
+                            <AvatarImage src={data.userData.avatar_url} alt={data.userData.full_name} />
+                            <AvatarFallback>{data.userData.full_name}</AvatarFallback>
+                        </Avatar>
+                        <h1 className="text-gray-400 px-2">{data.userData.full_name} が投稿</h1>
+                    </a>
                 </div>
 
                 <div className="flex">
@@ -166,7 +168,6 @@ export default function Character() {
 
                     {data.currentUser && data.character.postedby === data.currentUser.id ? <a href={`/character/edit/${data.character.id}`} className="py-5 px-5"><Button>キャラクター情報を編集</Button></a> : ""}
                 </div>
-
                 {data.character.firstperson ? <h1 className="py-2">一人称:{data.character.firstperson}</h1> : ""}
                 {data.character.ending ? <h1 className="py-2">語尾:{data.character.ending}</h1> : ""}
                 {data.character.details ? <h1 className="py-4">詳細設定プロンプト : {data.character.details}</h1> : ""}

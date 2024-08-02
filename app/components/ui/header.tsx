@@ -80,10 +80,12 @@ export default function Header(props: Props) {
                                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
-                                    <DropdownMenuItem>
-                                        <UserIcon className="mr-2 h-4 w-4" />
-                                        <span>Profile</span>
-                                    </DropdownMenuItem>
+                                    <a href={`/profile/${props.user.id}`}>
+                                        <DropdownMenuItem>
+                                            <UserIcon className="mr-2 h-4 w-4" />
+                                            <span>Profile</span>
+                                        </DropdownMenuItem>
+                                    </a>
                                     <a href="/character/select">
                                         <DropdownMenuItem>
                                             <Box className="mr-2 h-4 w-4" />
