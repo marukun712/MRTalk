@@ -12,6 +12,14 @@ import {
 } from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea"
 import NotFound from "~/components/ui/404";
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "~/components/ui/dialog"
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
     const response = new Response();
@@ -124,11 +132,21 @@ export default function EditCharacter() {
                 <Button type="submit">Edit Character</Button>
             </Form>
 
-            <Form method="post" className="py-10">
-                <input type="hidden" name="action" value="delete" />
+            <Dialog>
+                <DialogTrigger><Button className="bg-red-500">Delete Character</Button></DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="text-center my-5">本当にモデルを削除しますか?</DialogTitle>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Form method="post">
+                            <input type="hidden" name="action" value="delete" />
 
-                <Button type="submit">Delete Character</Button>
-            </Form>
+                            <Button type="submit" className="bg-red-500">Delete Character</Button>
+                        </Form>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

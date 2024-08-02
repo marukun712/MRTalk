@@ -10,7 +10,9 @@ import {
     LogOut,
     Settings,
     UserIcon,
-    Box
+    Box,
+    Mic,
+    PlusIcon
 } from "lucide-react"
 
 import {
@@ -18,7 +20,6 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
-    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu"
@@ -55,6 +56,7 @@ export default function Header(props: Props) {
                 <a href="/" className="flex items-center gap-2 text-lg font-semibold" >
                     <span>TalkWithVRM</span>
                 </a>
+
                 <form onSubmit={handleSubmit} className="relative w-full max-w-md">
                     <Input
                         placeholder="キャラクターを検索..."
@@ -67,6 +69,13 @@ export default function Header(props: Props) {
                     </Button>
                 </form>
 
+                <a href="/three">
+                    <Button>
+                        <Mic className="h-5 w-5" />
+                        <h1>会話モードに入る</h1>
+                    </Button>
+                </a>
+
                 <div className="flex items-center gap-4">
                     {props.signin ?
                         <DropdownMenu>
@@ -77,7 +86,6 @@ export default function Header(props: Props) {
                                 </Avatar>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56">
-                                <DropdownMenuLabel>My Account</DropdownMenuLabel>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuGroup>
                                     <a href={`/profile/${props.user.id}`}>
@@ -86,10 +94,16 @@ export default function Header(props: Props) {
                                             <span>Profile</span>
                                         </DropdownMenuItem>
                                     </a>
+                                    <a href="/character/add">
+                                        <DropdownMenuItem>
+                                            <PlusIcon className="mr-2 h-4 w-4" />
+                                            <span>Add Characters</span>
+                                        </DropdownMenuItem>
+                                    </a>
                                     <a href="/character/select">
                                         <DropdownMenuItem>
                                             <Box className="mr-2 h-4 w-4" />
-                                            <span>My Models</span>
+                                            <span>My Characters</span>
                                         </DropdownMenuItem>
                                     </a>
                                     <DropdownMenuItem>
