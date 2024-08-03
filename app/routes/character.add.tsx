@@ -11,6 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "~/components/ui/select";
+import { PlusIcon } from "lucide-react"
 
 export async function loader({ request }: LoaderFunctionArgs) {
     const response = new Response()
@@ -65,7 +66,7 @@ export async function action({ request }: ActionFunctionArgs) {
 export default function AddCharacter() {
     return (
         <div className="m-auto md:w-1/2 w-3/4 py-14">
-            <h1 className="font-bold text-3xl py-10 text-center">キャラクターを追加</h1>
+            <h1 className="font-bold text-3xl py-10 text-center">キャラクターを投稿</h1>
 
             <Form method="post" className="py-10">
                 <div>
@@ -100,7 +101,7 @@ export default function AddCharacter() {
                     <label htmlFor="details">詳細設定、指示</label>
                     <Textarea name="details" id="details" className="h-36" />
                 </div>
-                <Button type="submit">キャラクターを追加</Button>
+                <Button type="submit" className="bg-green-500 text-black my-12"><PlusIcon />編集を確定</Button>
             </Form>
         </div>
     )

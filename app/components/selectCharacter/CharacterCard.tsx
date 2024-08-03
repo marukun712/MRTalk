@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { getVRMThumbnail } from "~/utils/VRM/getVRMThumbnail";
 import {
     Card,
@@ -21,8 +21,12 @@ export default function CharacterCard(props: Props) {
     const [thumbnail, setThumbnail] = useState<string>("");
     const [postedBy, setPostedBy] = useState<string>("");
     const { supabase } = useOutletContext<{ supabase: SupabaseClient<Database> }>();
+    const created = useRef(false);
 
-    useEffect(() => {
+    const setCardData = useCallback(async () => {
+        if (created.current) return;
+        created.current = true;
+
         const fetchThumbnail = async () => {
             try {
                 const thumbnailUrl = await getVRMThumbnail(props.model_url); // VRMモデルのURLからサムネイルを取得する関数
@@ -47,8 +51,11 @@ export default function CharacterCard(props: Props) {
         };
 
         fetchUserName();
+    }, [props.model_url, props.postedby])
 
-    }, [props.model_url, props.postedby]);
+    useEffect(() => {
+        setCardData();
+    }, [setCardData]);
 
     return (
         <a href={`../character/details/${props.id}`}>

@@ -72,7 +72,7 @@ export default function Header(props: Props) {
                 <a href="/three">
                     <Button>
                         <Mic className="h-5 w-5" />
-                        <h1>会話モードに入る</h1>
+                        <h1>MRでキャラクターとはなす</h1>
                     </Button>
                 </a>
 
@@ -91,30 +91,30 @@ export default function Header(props: Props) {
                                     <a href={`/profile/${props.user.id}`}>
                                         <DropdownMenuItem>
                                             <UserIcon className="mr-2 h-4 w-4" />
-                                            <span>Profile</span>
+                                            <span>プロフィール</span>
                                         </DropdownMenuItem>
                                     </a>
                                     <a href="/character/add">
                                         <DropdownMenuItem>
                                             <PlusIcon className="mr-2 h-4 w-4" />
-                                            <span>Add Characters</span>
+                                            <span>キャラクターを追加する</span>
                                         </DropdownMenuItem>
                                     </a>
                                     <a href="/character/select">
                                         <DropdownMenuItem>
                                             <Box className="mr-2 h-4 w-4" />
-                                            <span>My Characters</span>
+                                            <span>自分のキャラクター</span>
                                         </DropdownMenuItem>
                                     </a>
                                     <DropdownMenuItem>
                                         <Settings className="mr-2 h-4 w-4" />
-                                        <span>Settings</span>
+                                        <span>設定</span>
                                     </DropdownMenuItem>
                                 </DropdownMenuGroup>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={handleLogout}>
                                     <LogOut className="mr-2 h-4 w-4" />
-                                    <span>Log out</span>
+                                    <span>ログアウト</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>

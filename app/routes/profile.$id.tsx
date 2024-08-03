@@ -6,6 +6,7 @@ import { useLoaderData } from "@remix-run/react";
 import CharacterCard from "~/components/selectCharacter/CharacterCard";
 import { Button } from "~/components/ui/button";
 import CharacterList from "~/components/selectCharacter/CharacterList";
+import { Edit } from "lucide-react";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
     const response = new Response()
@@ -50,7 +51,7 @@ export default function Profile() {
                     <h1 className="text-3xl font-bold">{data.userData.full_name}</h1>
                 </div>
             </div>
-            {data.currentUser && data.userData.id == data.currentUser.id ? <a href={`/profile/edit/${data.currentUser.id}`} className="my-5 mx-5 flex justify-center"><Button>ユーザー情報を編集</Button></a> : ""}
+            {data.currentUser && data.userData.id == data.currentUser.id ? <a href={`/profile/edit/${data.currentUser.id}`} className="my-5 mx-5 flex justify-center"><Button><Edit className="px-1" />ユーザー情報を編集</Button></a> : ""}
             {data.character ?
                 <CharacterList title="投稿したキャラクター">
                     {data.character.map((character) => {

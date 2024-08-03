@@ -20,6 +20,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "~/components/ui/dialog"
+import { Edit, Trash } from "lucide-react";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
     const response = new Response();
@@ -129,11 +130,11 @@ export default function EditCharacter() {
                     <Textarea name="details" id="details" className="h-36" defaultValue={data.details} />
                 </div>
 
-                <Button type="submit">Edit Character</Button>
+                <Button type="submit" className="bg-green-500 text-black my-12"><Edit />編集を確定</Button>
             </Form>
 
             <Dialog>
-                <DialogTrigger><Button className="bg-red-500">Delete Character</Button></DialogTrigger>
+                <DialogTrigger><Button className="bg-red-500"><Trash />キャラクターを削除</Button></DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle className="text-center my-5">本当にモデルを削除しますか?</DialogTitle>
@@ -142,7 +143,7 @@ export default function EditCharacter() {
                         <Form method="post">
                             <input type="hidden" name="action" value="delete" />
 
-                            <Button type="submit" className="bg-red-500">Delete Character</Button>
+                            <Button type="submit" className="bg-red-500"><Trash />キャラクターを削除</Button>
                         </Form>
                     </DialogFooter>
                 </DialogContent>

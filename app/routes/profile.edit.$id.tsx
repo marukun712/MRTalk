@@ -4,6 +4,7 @@ import { Input } from "~/components/ui/input";
 import { createServerClient } from "@supabase/auth-helpers-remix";
 import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import NotFound from "~/components/ui/404";
+import { Edit } from "lucide-react";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
     const response = new Response()
@@ -68,7 +69,7 @@ export default function Profile() {
                     <Input type="text" name="avatar_url" id="model_url" pattern="https?://\S+" title="URLは、httpsで始まる絶対URLで記入してください。" defaultValue={data.userData.avatar_url} required />
                 </div>
 
-                <Button type="submit">Edit Character</Button>
+                <Button type="submit" className="bg-green-500 text-black my-12"><Edit />編集を確定</Button>
             </Form>
         </div>
     )
