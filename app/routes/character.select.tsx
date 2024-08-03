@@ -2,6 +2,7 @@ import { useLoaderData, redirect } from "@remix-run/react"
 import { createServerClient } from "@supabase/auth-helpers-remix"
 import { LoaderFunctionArgs } from "@remix-run/node"
 import CharacterCard from "~/components/selectCharacter/CharacterCard"
+import CharacterList from "~/components/selectCharacter/CharacterList"
 
 export async function loader({ request }: LoaderFunctionArgs) {
     const response = new Response()
@@ -34,24 +35,22 @@ export default function SelectCharacter() {
     const data = useLoaderData<typeof loader>();
 
     return (
-        <div className="m-auto md:w-1/2 w-3/4 py-14">
-            <h1 className="font-bold text-3xl py-10">あなたのキャラクター</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+        <div>
+            <CharacterList title="あなたのキャラクター">
                 {data?.myCharacter?.map((character) => {
                     return (
                         <CharacterCard id={character.id} name={character.name} model_url={character.model_url} key={character.id} postedby={character.postedby} />
                     )
                 })}
-            </div>
+            </CharacterList>
 
-            <h1 className="font-bold text-3xl py-10">お気に入りのキャラクター</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+            <CharacterList title="お気に入りのキャラクター">
                 {data?.favorites?.map((favorite) => {
                     return (
                         <CharacterCard id={favorite.characters.id} name={favorite.characters.name} model_url={favorite.characters.model_url} key={favorite.characters.id} postedby={favorite.characters.postedby} />
                     )
                 })}
-            </div>
+            </CharacterList>
         </div>
     )
 }

@@ -5,6 +5,7 @@ import NotFound from "~/components/ui/404";
 import { useLoaderData } from "@remix-run/react";
 import CharacterCard from "~/components/selectCharacter/CharacterCard";
 import { Button } from "~/components/ui/button";
+import CharacterList from "~/components/selectCharacter/CharacterList";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
     const response = new Response()
@@ -39,7 +40,7 @@ export default function Profile() {
     if (!data.userData) return <NotFound />
 
     return (
-        <div className="m-auto md:w-1/2 w-3/4 py-14">
+        <div>
             <div className="flex flex-col items-center gap-4">
                 <Avatar className="h-24 w-24">
                     <AvatarImage src={data.userData.avatar_url} />
@@ -51,16 +52,13 @@ export default function Profile() {
             </div>
             {data.currentUser && data.userData.id == data.currentUser.id ? <a href={`/profile/edit/${data.currentUser.id}`} className="my-5 mx-5 flex justify-center"><Button>ユーザー情報を編集</Button></a> : ""}
             {data.character ?
-                <div>
-                    <h1 className="text-3xl font-bold">投稿したキャラクター</h1>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10 py-16">
-                        {data.character.map((character) => {
-                            return (
-                                <CharacterCard id={character.id} name={character.name} model_url={character.model_url} key={character.id} postedby={character.postedby} />
-                            )
-                        })}
-                    </div>
-                </div> :
+                <CharacterList title="投稿したキャラクター">
+                    {data.character.map((character) => {
+                        return (
+                            <CharacterCard id={character.id} name={character.name} model_url={character.model_url} key={character.id} postedby={character.postedby} />
+                        )
+                    })}
+                </CharacterList> :
                 ""}
         </div>
     )

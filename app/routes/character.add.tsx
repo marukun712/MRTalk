@@ -63,7 +63,6 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function AddCharacter() {
-
     return (
         <div className="m-auto md:w-1/2 w-3/4 py-14">
             <h1 className="font-bold text-3xl py-10 text-center">キャラクターを追加</h1>

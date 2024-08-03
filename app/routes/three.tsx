@@ -21,8 +21,6 @@ import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFa
 
 import { VOICEVOXTTS } from "~/utils/AIChat/VOICEVOX";
 
-import { CrowdHelper } from 'recast-navigation/three';
-
 export async function loader({ request }: LoaderFunctionArgs) {
     const response = new Response();
 
@@ -81,11 +79,12 @@ export default function Three() {
 
             const clock = new THREE.Clock();
             const xr = renderer.xr;
-            const grounds: Mesh[] = XRPlanes(xr, scene);
+            const grounds = XRPlanes(xr, scene);
 
             let crowd: Crowd;
             let agent: CrowdAgent;
             let navMeshQuery: NavMeshQuery
+            let lowestGround: Mesh | null = null;
 
             let idolAnim: THREE.AnimationClip;
             let walkAnim: THREE.AnimationClip;
@@ -99,34 +98,37 @@ export default function Three() {
             let currentMixer: THREE.AnimationMixer;
             let textbox: SpriteText;
             let mediaRecorder: MediaRecorder;
-            let crowdHelper: CrowdHelper;
             const audioChunks: Blob[] = [];
 
             let talking = false;
+            let talkMode = false;
 
             const params = {
                 timeScale: 1.0,
             };
 
-            async function requestToOpenAI(text: string): Promise<{ content: string, emotion: string }> {
-                const body = JSON.stringify({
-                    "text": text,
-                    "name": character.name,
-                    "ending": character.ending,
-                    "details": character.details,
-                    "firstperson": character.firstperson
-                });
+            const character = data.character;
+            const modelURL = character.model_url;
 
-                const req = await fetch('/openai', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: body
-                });
+            async function loadCharacterModel() {
+                try {
+                    model = await LoadVRM(modelURL);
+                    vrm = model.userData.vrm;
+                    scene.add(model.scene);
 
-                const result = await req.json();
-                return result;
+                    model.scene.position.set(0, -1.5, 0);
+
+                    currentMixer = new THREE.AnimationMixer(model.scene);
+                    currentMixer.timeScale = params.timeScale;
+
+                    idolAnim = await loadMixamoAnimation("./animations/Standing_Idle.fbx", vrm);
+                    walkAnim = await loadMixamoAnimation("./animations/Walking.fbx", vrm);
+                    joyAnim = await loadMixamoAnimation("./animations/Jump.fbx", vrm);
+                    sorrowAnim = await loadMixamoAnimation("./animations/Sad_Idle.fbx", vrm);
+                    angryAnim = await loadMixamoAnimation("./animations/Angry.fbx", vrm);
+                } catch (e) {
+                    console.error(e);
+                }
             }
 
             function resetEmotion() {
@@ -141,9 +143,7 @@ export default function Three() {
                 vrm.expressionManager?.setValue("neutral", 1)
             }
 
-            //TODO 表情名を調べる
             function setEmotion(emotion: string) {
-                //モーション、表情の初期化
                 resetEmotion();
 
                 switch (emotion) {
@@ -167,49 +167,72 @@ export default function Three() {
 
             function addFukidashi(text: string) {
                 scene.remove(textbox);
-
                 textbox = new SpriteText(text, 0.05);
                 scene.add(textbox);
+            }
+
+            async function requestToOpenAI(text: string): Promise<{ content: string, emotion: string }> {
+                const body = JSON.stringify({
+                    "text": text,
+                    "name": character.name,
+                    "ending": character.ending,
+                    "details": character.details,
+                    "firstperson": character.firstperson
+                });
+
+                const req = await fetch('/openai', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: body
+                });
+
+                const result = await req.json();
+                return result;
             }
 
             async function talk(text: string) {
                 talking = true;
                 setTimeout(() => {
                     talking = false;
-
                     resetEmotion();
+                    currentMixer.clipAction(idolAnim).play();
                 }, 20000);
+
                 const xrCamera = renderer.xr.getCamera();
                 model.scene.lookAt(xrCamera.position.x, model.scene.position.y, xrCamera.position.z);
-                addFukidashi("loading...")
+                addFukidashi("考え中...");
 
                 const res = await requestToOpenAI(text);
                 const message = res.content;
                 const emotion = res.emotion;
-                VOICEVOXTTS(res.content)
+                VOICEVOXTTS(res.content);
 
                 setEmotion(emotion);
-                addFukidashi(message)
+                addFukidashi(message);
             }
 
-            function setupCrowd(grounds: Mesh[]): void {
+            function setupCrowd(grounds: Mesh[]) {
                 setTimeout(() => {
-                    const { navMesh } = threeToSoloNavMesh(grounds);
+                    grounds.map((mesh: Mesh) => {
+                        if (!lowestGround || mesh.position.y < lowestGround.position.y) {
+                            lowestGround = mesh;
+                        }
+                    });
 
+                    const { navMesh } = threeToSoloNavMesh(grounds);
                     if (!navMesh) return;
 
                     const maxAgents = 1;
                     const maxAgentRadius = 0.6;
 
                     crowd = new Crowd(navMesh, { maxAgents, maxAgentRadius });
-
                     navMeshQuery = new NavMeshQuery(navMesh);
-                    const radius = 0.3;
-                    const { randomPoint: initialAgentPosition } = navMeshQuery.findRandomPointAroundCircle(new THREE.Vector3(), radius);
 
-                    agent = crowd.addAgent(initialAgentPosition, {
-                        radius: 0.3,
-                        height: 1.3,
+                    agent = crowd.addAgent(new THREE.Vector3(0, 0, 0), {
+                        radius: 0.25,
+                        height: 1.25,
                         maxAcceleration: 4.0,
                         maxSpeed: 0.5,
                         collisionQueryRange: 0.5,
@@ -217,21 +240,25 @@ export default function Three() {
                         separationWeight: 1.0,
                     });
 
-                    crowdHelper = new CrowdHelper({ crowd });
-
-                    scene.add(crowdHelper);
+                    setAgentTargetPosition();
 
                     setInterval(() => {
-                        const { randomPoint: point } = navMeshQuery.findRandomPointAroundCircle(new THREE.Vector3(), 1);
-                        agent.requestMoveTarget(point);
+                        setAgentTargetPosition();
                     }, 10000);
 
-                    setInterval(() => updateCrowdAgentMovement(), 500);
+                    setInterval(() => updateModelMovement(), 500);
                 }, 5000);
             }
 
-            function updateCrowdAgentMovement(): void {
-                if (agent && !talking) {
+            function setAgentTargetPosition() {
+                if (!talkMode) {
+                    const { randomPoint: point } = navMeshQuery.findRandomPointAroundCircle(new THREE.Vector3(), 1);
+                    agent.requestMoveTarget(point);
+                }
+            }
+
+            function updateModelMovement() {
+                if (agent && !talking && !talkMode) {
                     const agentPosition = new THREE.Vector3(agent.position().x, agent.position().y, agent.position().z);
                     const agentDestination = new THREE.Vector3(agent.target().x, agent.target().y, agent.target().z);
 
@@ -258,11 +285,21 @@ export default function Three() {
                 }
             }
 
-            xr.addEventListener('sessionstart', async () => {
-                setupCrowd(grounds);
+            function changeTalkMode(mode: boolean) {
+                if (mode) {
+                    addFukidashi("キャラクターの巡回を停止");
+                    resetEmotion();
+                    currentMixer.clipAction(idolAnim).play();
+                } else {
+                    addFukidashi("キャラクターの巡回を再開");
+                    resetEmotion();
+                    currentMixer.clipAction(idolAnim).play();
+                }
+            }
 
+            function setupControllers() {
                 const geometry = new THREE.BufferGeometry();
-                geometry.setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, - 5)]);
+                geometry.setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -5)]);
 
                 const controller1 = renderer.xr.getController(0);
                 controller1.add(new THREE.Line(geometry));
@@ -282,111 +319,75 @@ export default function Three() {
                 controllerGrip2.add(controllerModelFactory.createControllerModel(controllerGrip2));
                 scene.add(controllerGrip2);
 
-                controllerGrip1.addEventListener('selectstart', (evt) => {
-                    console.log(evt)
+                controllerGrip1.addEventListener('selectstart', () => {
                     audioChunks.length = 0;
-                    addFukidashi("録音中...")
+                    addFukidashi("録音中...");
                     mediaRecorder.start();
                 });
-                controllerGrip1.addEventListener('selectend', (evt) => {
-                    console.log(evt)
+
+                controllerGrip1.addEventListener('selectend', () => {
                     mediaRecorder.stop();
-                    addFukidashi("録音完了 返答を生成中...")
+                    addFukidashi("録音完了 考え中...");
                 });
 
+                controllerGrip2.addEventListener('selectstart', () => {
+                    talkMode = !talkMode;
+                    changeTalkMode(talkMode);
+                });
+            }
+
+            async function setupMediaRecorder() {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
                     mediaRecorder = new MediaRecorder(stream);
 
-                    mediaRecorder.onstart = () => {
-                        console.log('Recording started');
-                    };
-
-                    mediaRecorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
+                    mediaRecorder.onstart = () => console.log('Recording started');
+                    mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
                     mediaRecorder.onstop = async () => {
                         const blob = new Blob(audioChunks, { type: "audio/wav" });
-                        console.log(blob)
-
                         const response = await fetch('/stt', {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'audio/wav'
-                            },
-                            body: blob
+                            headers: { 'Content-Type': 'audio/wav' },
+                            body: blob,
                         });
 
                         const result = await response.json();
-                        console.log(result)
-
-                        if (result) {
-                            talk(result)
-                        }
+                        if (result) talk(result);
                     };
                 } catch (e) {
-                    console.error(e)
+                    console.error(e);
                 }
-            });
-
-            const character = data.character;
-            const modelURL = character.model_url;
-
-            try {
-                model = await LoadVRM(modelURL);
-                vrm = model.userData.vrm;
-                scene.add(model.scene);
-
-                model.scene.position.set(0, -1.5, 0);
-
-                currentMixer = new THREE.AnimationMixer(model.scene);
-                currentMixer.timeScale = params.timeScale;
-
-                idolAnim = await loadMixamoAnimation("./animations/Standing_Idle.fbx", vrm);
-                walkAnim = await loadMixamoAnimation("./animations/Walking.fbx", vrm);
-                joyAnim = await loadMixamoAnimation("./animations/Jump.fbx", vrm);
-                sorrowAnim = await loadMixamoAnimation("./animations/Sad_Idle.fbx", vrm);
-                angryAnim = await loadMixamoAnimation("./animations/Angry.fbx", vrm);
-
-            } catch (e) {
-                console.error(e);
             }
 
             function animate() {
                 const deltaTime = clock.getDelta();
 
-                if (currentMixer) {
-                    currentMixer.update(deltaTime);
-                }
+                if (currentMixer) currentMixer.update(deltaTime);
+                if (vrm) vrm.update(deltaTime);
 
-                if (vrm) {
-                    vrm.update(deltaTime);
-                }
-
-                if (crowdHelper) {
-                    crowdHelper.update();
-                }
-
-                if (crowd && agent && model && !talking) {
+                if (crowd && agent && model && lowestGround && !talking && !talkMode) {
                     crowd.update(1 / 60.0);
                     const agentPos = agent.position();
-                    model.scene.position.set(agentPos.x, agentPos.y - 0.3, agentPos.z);
+                    model.scene.position.set(agentPos.x, lowestGround.position.y, agentPos.z);
                 }
 
                 if (textbox && model) {
-                    textbox.position.x = model.scene.position.x
-                    textbox.position.z = model.scene.position.z
-                    textbox.position.y = model.scene.position.y + 1.7
+                    textbox.position.set(model.scene.position.x, model.scene.position.y + 1.7, model.scene.position.z);
                 }
 
                 renderer.render(scene, camera);
             }
+
+            xr.addEventListener('sessionstart', async () => {
+                setupCrowd(grounds);
+                setupControllers();
+                setupMediaRecorder();
+            });
+
+            await loadCharacterModel();
         })();
     }, [data]);
 
-    return (
-        <div>
-        </div>
-    );
+    return <div></div>;
 }

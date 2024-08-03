@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/auth-helpers-remix";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import CharacterCard from "~/components/selectCharacter/CharacterCard";
+import CharacterList from "~/components/selectCharacter/CharacterList";
 
 export async function loader({ request }: LoaderFunctionArgs) {
     const response = new Response()
@@ -58,20 +59,13 @@ export default function Index() {
                     </div>
                 </section>
 
-                <section className="py-12 md:py-20">
-                    <div className="container max-w-6xl mx-auto px-4 md:px-6">
-                        <div className="flex items-center justify-between mb-8">
-                            <h2 className="text-3xl md:text-4xl font-bold">最新のキャラクター</h2>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
-                            {data?.map((character) => {
-                                return (
-                                    <CharacterCard id={character.id} name={character.name} model_url={character.model_url} key={character.id} postedby={character.postedby} />
-                                )
-                            })}
-                        </div>
-                    </div>
-                </section>
+                <CharacterList title="最新のキャラクター">
+                    {data?.map((character) => {
+                        return (
+                            <CharacterCard id={character.id} name={character.name} model_url={character.model_url} key={character.id} postedby={character.postedby} />
+                        )
+                    })}
+                </CharacterList>
             </main>
         </div>
     )

@@ -4,8 +4,8 @@ import {
     Mesh,
     MeshBasicMaterial,
     Scene,
-    WebXRManager
-} from 'three';
+    WebXRManager,
+} from "three";
 
 export function XRPlanes(xr: WebXRManager, scene: Scene) {
     const matrix = new Matrix4();
@@ -13,7 +13,7 @@ export function XRPlanes(xr: WebXRManager, scene: Scene) {
     const grounds: Mesh[] = new Array();
 
     //平面検出時
-    xr.addEventListener('planesdetected', event => {
+    xr.addEventListener("planesdetected", (event) => {
         const frame = event.data;
         const planes = frame.detectedPlanes;
 
@@ -22,7 +22,6 @@ export function XRPlanes(xr: WebXRManager, scene: Scene) {
         for (const [plane, mesh] of currentPlanes) {
             //検出から外れたメッシュを削除
             if (planes.has(plane) === false) {
-
                 mesh.geometry.dispose();
                 mesh.material.dispose();
                 scene.remove(mesh);
@@ -34,7 +33,6 @@ export function XRPlanes(xr: WebXRManager, scene: Scene) {
         //planeからMeshを生成
         for (const plane of planes) {
             if (currentPlanes.has(plane) === false) {
-
                 const pose = frame.getPose(plane.planeSpace, referenceSpace);
                 matrix.fromArray(pose.transform.matrix);
 
@@ -57,7 +55,9 @@ export function XRPlanes(xr: WebXRManager, scene: Scene) {
 
                 const geometry = new BoxGeometry(width, 0.01, height);
                 const material = new MeshBasicMaterial({
-                    color: 0xffffff * Math.random(), transparent: true, opacity: 0 //透明度を指定
+                    color: 0xffffff * Math.random(),
+                    transparent: true,
+                    opacity: 0, //透明度を指定
                 });
 
                 const mesh = new Mesh(geometry, material);
@@ -71,5 +71,5 @@ export function XRPlanes(xr: WebXRManager, scene: Scene) {
         }
     });
 
-    return grounds
+    return grounds;
 }

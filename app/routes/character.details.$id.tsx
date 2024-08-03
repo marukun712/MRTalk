@@ -197,24 +197,24 @@ export default function Character() {
 
                 <div className="flex">
                     {data.favoriteData ?
-                        <Form method="post" className="py-5 px-5">
+                        <Form method="post" className="py-5">
                             <input type="hidden" name="action" value="deleteFavorite" />
                             <input type="hidden" name="id" value={data.character.id} />
 
                             <Button type="submit">お気に入りから削除</Button>
                         </Form>
-                        : <Form method="post" className="py-5 px-5">
+                        : <Form method="post" className="py-5">
                             <input type="hidden" name="action" value="favorite" />
                             <Button type="submit">お気に入りに追加</Button>
                         </Form>}
 
 
-                    <Form method="post" className="py-5">
+                    <Form method="post" className="py-5 px-5">
                         <input type="hidden" name="action" value="use" />
                         <Button type="submit">このキャラクターを使用</Button>
                     </Form>
 
-                    {data.currentUser && data.character.postedby === data.currentUser.id ? <a href={`/character/edit/${data.character.id}`} className="py-5 px-5"><Button>キャラクター情報を編集</Button></a> : ""}
+                    {data.currentUser && data.character.postedby === data.currentUser.id ? <a href={`/character/edit/${data.character.id}`} className="py-5"><Button>キャラクター情報を編集</Button></a> : ""}
                 </div>
                 {data.character.firstperson ? <h1 className="py-2">一人称:{data.character.firstperson}</h1> : ""}
                 {data.character.ending ? <h1 className="py-2">語尾:{data.character.ending}</h1> : ""}
