@@ -53,7 +53,7 @@ export default function Index() {
                                         で共有
                                     </Button>
                                 </a>
-                                <a href="https://mastodonshare.com/?textVRM%E3%83%A2%E3%83%87%E3%83%AB%E3%81%A8MR%E7%A9%BA%E9%96%93%E3%81%A7%E4%BC%9A%E8%A9%B1%E3%81%A7%E3%81%8D%E3%82%8B%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9&url=http:%2F%2Fexmaple.com&visibility=public&localOnly=0">
+                                <a href="https://donshare.net/share.html?textVRM%E3%83%A2%E3%83%87%E3%83%AB%E3%81%A8MR%E7%A9%BA%E9%96%93%E3%81%A7%E4%BC%9A%E8%A9%B1%E3%81%A7%E3%81%8D%E3%82%8B%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9&url=http:%2F%2Fexmaple.com">
                                     <Button className="bg-blue-500">
                                         <img src="https://joinmastodon.org/logos/logo-purple.svg" className="mx-2" width={20} height={20} alt="misskey icon" />
                                         で共有

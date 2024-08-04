@@ -137,7 +137,7 @@ export default function EditCharacter() {
                 <DialogTrigger><Button className="bg-red-500"><Trash />キャラクターを削除</Button></DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle className="text-center my-5">本当にモデルを削除しますか?</DialogTitle>
+                        <DialogTitle className="text-center my-5">本当にキャラクターを削除しますか?</DialogTitle>
                     </DialogHeader>
                     <DialogFooter>
                         <Form method="post">
