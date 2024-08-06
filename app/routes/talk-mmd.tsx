@@ -6,7 +6,6 @@ import { redirect, useLoaderData } from "@remix-run/react";
 import * as THREE from "three";
 import { ARButton } from "three/addons/webxr/ARButton.js";
 import { createScene } from "~/utils/Three/createScene";
-import { MMDAnimationHelper } from "three/examples/jsm/animation/MMDAnimationHelper.js";
 
 import { init, NavMeshQuery, Crowd, CrowdAgent } from "recast-navigation";
 import { threeToSoloNavMesh } from "recast-navigation/three";
@@ -19,6 +18,7 @@ import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFa
 import { VOICEVOXTTS } from "~/utils/AIChat/VOICEVOX";
 import { requestToOpenAI } from "~/utils/AIChat/requestToOpenAI";
 import { LoadMMD } from "~/utils/MMD/LoadMMD";
+import { LoadMMDAnim } from "~/utils/MMD/LoadMMDAnim";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -95,14 +95,13 @@ export default function Three() {
     let lowestGround: Mesh | null = null;
 
     let mmdModel: THREE.SkinnedMesh;
-    let mmdAnimationHelper: MMDAnimationHelper;
+    let currentMixer: THREE.AnimationMixer;
 
-    /*
-        let idolAnim: THREE.AnimationClip;
-        let joyAnim: THREE.AnimationClip;
-        let sorrowAnim: THREE.AnimationClip;
-        let angryAnim: THREE.AnimationClip;
-    */
+    let idolAnim: THREE.AnimationClip;
+    let walkAnim: THREE.AnimationClip;
+    let joyAnim: THREE.AnimationClip;
+    let sorrowAnim: THREE.AnimationClip;
+    let angryAnim: THREE.AnimationClip;
 
     let textbox: SpriteText;
     let mediaRecorder: MediaRecorder;
@@ -111,68 +110,58 @@ export default function Three() {
     let talking = false;
     let talkMode = false;
 
+    const params = {
+      timeScale: 1.0,
+    };
+
     const character = data.character;
-    const modelURL = "/mmd/aqua/aqua.pmx";
+    const modelURL = "./mmd/桜乃そら/桜乃そら.pmx";
 
     async function loadCharacterModel() {
-      try {
-        mmdModel = await LoadMMD(modelURL);
+      mmdModel = await LoadMMD(modelURL);
 
-        scene.add(mmdModel);
+      scene.add(mmdModel);
 
-        mmdModel.position.set(0, -1.5, 0);
+      mmdModel.position.set(0, -1.5, 0);
 
-        mmdAnimationHelper = new MMDAnimationHelper();
-        mmdAnimationHelper.add(mmdModel);
+      mmdModel.scale.set(0.08, 0.08, 0.08);
 
-        /* アニメーションの読み込み
-                idolAnim = await LoadMMDAnim("./animations/idle.vmd", mmdModel);
-                joyAnim = await LoadMMDAnim("./animations/joy.vmd", mmdModel);
-                sorrowAnim = await LoadMMDAnim("./animations/sorrow.vmd", mmdModel);
-                angryAnim = await LoadMMDAnim("./animations/angry.vmd", mmdModel);
-                */
-      } catch (e) {
-        console.error(e);
-      }
+      currentMixer = new THREE.AnimationMixer(mmdModel);
+      currentMixer.timeScale = params.timeScale;
+
+      idolAnim = await LoadMMDAnim("./mmd/anim/idle.vmd", mmdModel);
+      walkAnim = await LoadMMDAnim("./mmd/anim/walk.vmd", mmdModel);
+      joyAnim = await LoadMMDAnim("./mmd/anim/わーい.vmd", mmdModel);
+      sorrowAnim = await LoadMMDAnim("./mmd/anim/えー.vmd", mmdModel);
+      angryAnim = await LoadMMDAnim("./mmd/anim/なによっ.vmd", mmdModel);
     }
 
-    /*
-        function resetEmotion() {
-            mmdAnimationHelper.remove(mmdModel);
-        }
+    function resetEmotion() {
+      currentMixer.clipAction(idolAnim).stop();
+      currentMixer.clipAction(walkAnim).stop();
+      currentMixer.clipAction(joyAnim).stop();
+      currentMixer.clipAction(sorrowAnim).stop();
+      currentMixer.clipAction(angryAnim).stop();
+    }
 
+    function setEmotion(emotion: string) {
+      resetEmotion();
 
-        function setEmotion(emotion: string) {
-            resetEmotion();
-
-            switch (emotion) {
-                case "fun":
-                    mmdAnimationHelper.add(mmdModel, {
-                        animation: idolAnim,
-                        physics: true
-                    });
-                    break;
-                case "joy":
-                    mmdAnimationHelper.add(mmdModel, {
-                        animation: joyAnim,
-                        physics: true
-                    });
-                    break;
-                case "sorrow":
-                    mmdAnimationHelper.add(mmdModel, {
-                        animation: sorrowAnim,
-                        physics: true
-                    });
-                    break;
-                case "angry":
-                    mmdAnimationHelper.add(mmdModel, {
-                        animation: angryAnim,
-                        physics: true
-                    });
-                    break;
-            }
-        }
-        */
+      switch (emotion) {
+        case "fun":
+          currentMixer.clipAction(idolAnim).play();
+          break;
+        case "joy":
+          currentMixer.clipAction(joyAnim).play();
+          break;
+        case "sorrow":
+          currentMixer.clipAction(sorrowAnim).play();
+          break;
+        case "angry":
+          currentMixer.clipAction(angryAnim).play();
+          break;
+      }
+    }
 
     function addFukidashi(text: string) {
       scene.remove(textbox);
@@ -184,11 +173,8 @@ export default function Three() {
       talking = true;
       setTimeout(() => {
         talking = false;
-
-        /*
-                resetEmotion();
-                setEmotion("fun");
-                */
+        resetEmotion();
+        currentMixer.clipAction(idolAnim).play();
       }, 20000);
 
       const xrCamera = renderer.xr.getCamera();
@@ -201,18 +187,14 @@ export default function Three() {
 
       const res = await requestToOpenAI(text, character);
       const message = res.content;
-      /*
       const emotion = res.emotion;
-      */
       VOICEVOXTTS(res.content);
 
-      /*
-            setEmotion(emotion);
-            */
+      setEmotion(emotion);
       addFukidashi(message);
     }
 
-    function setupCrowd(grounds: Mesh[]) {
+    function setupNavMeshAndCrowd(grounds: Mesh[]) {
       setTimeout(() => {
         grounds.map((mesh: Mesh) => {
           if (!lowestGround || mesh.position.y < lowestGround.position.y) {
@@ -276,9 +258,8 @@ export default function Three() {
         const thresholdDistance = 0.1;
 
         if (distanceToTarget > thresholdDistance) {
-          /*
-                    setEmotion("walk");
-                    */
+          currentMixer.clipAction(walkAnim).play();
+          currentMixer.clipAction(idolAnim).stop();
 
           const direction = new THREE.Vector3()
             .subVectors(agentDestination, agentPosition)
@@ -298,9 +279,8 @@ export default function Three() {
 
           mmdModel.quaternion.slerp(fixedQuaternion, 0.5);
         } else {
-          /*
-                    setEmotion("fun");
-                    */
+          currentMixer.clipAction(idolAnim).play();
+          currentMixer.clipAction(walkAnim).stop();
         }
       }
     }
@@ -308,18 +288,12 @@ export default function Three() {
     function changeTalkMode(mode: boolean) {
       if (mode) {
         addFukidashi("キャラクターの巡回を停止");
-
-        /*
-                resetEmotion();
-                setEmotion("fun");
-                */
+        resetEmotion();
+        currentMixer.clipAction(idolAnim).play();
       } else {
         addFukidashi("キャラクターの巡回を再開");
-
-        /*
-                resetEmotion();
-                setEmotion("fun");
-                */
+        resetEmotion();
+        currentMixer.clipAction(idolAnim).play();
       }
     }
 
@@ -394,10 +368,11 @@ export default function Three() {
         console.error(e);
       }
     }
+
     function animate() {
       const deltaTime = clock.getDelta();
 
-      if (mmdAnimationHelper) mmdAnimationHelper.update(deltaTime);
+      if (currentMixer) currentMixer.update(deltaTime);
 
       if (crowd && agent && mmdModel && lowestGround && !talking && !talkMode) {
         crowd.update(1 / 60.0);
@@ -417,7 +392,7 @@ export default function Three() {
     }
 
     xr.addEventListener("sessionstart", async () => {
-      setupCrowd(grounds);
+      setupNavMeshAndCrowd(grounds);
       setupControllers();
       setupMediaRecorder();
     });

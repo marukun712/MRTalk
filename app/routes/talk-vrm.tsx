@@ -98,7 +98,6 @@ export default function Three() {
 
     let idolAnim: THREE.AnimationClip;
     let walkAnim: THREE.AnimationClip;
-
     let joyAnim: THREE.AnimationClip;
     let sorrowAnim: THREE.AnimationClip;
     let angryAnim: THREE.AnimationClip;
@@ -126,7 +125,7 @@ export default function Three() {
         vrm = model.userData.vrm;
         scene.add(model.scene);
 
-        model.scene.position.set(0, -1.5, 0);
+        model.scene.position.set(0, 0, 0);
 
         currentMixer = new THREE.AnimationMixer(model.scene);
         currentMixer.timeScale = params.timeScale;
@@ -212,7 +211,7 @@ export default function Three() {
       addFukidashi(message);
     }
 
-    function setupCrowd(grounds: Mesh[]) {
+    function setupNavMeshAndCrowd(grounds: Mesh[]) {
       setTimeout(() => {
         grounds.map((mesh: Mesh) => {
           if (!lowestGround || mesh.position.y < lowestGround.position.y) {
@@ -415,7 +414,7 @@ export default function Three() {
     }
 
     xr.addEventListener("sessionstart", async () => {
-      setupCrowd(grounds);
+      setupNavMeshAndCrowd(grounds);
       setupControllers();
       setupMediaRecorder();
     });
