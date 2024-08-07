@@ -36,12 +36,12 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     .eq("id", id)
     .single();
 
-  if (!character || !currentUser) return null;
+  if (!character) return null;
 
   const { data: currentUserData } = await supabase
     .from("profiles")
     .select("id,avatar_url,full_name,current_character")
-    .eq("id", currentUser.id)
+    .eq("id", currentUser?.id)
     .single();
 
   const { data: userData } = await supabase
@@ -184,15 +184,15 @@ export default function Character() {
     alert(result);
   }, [result]);
 
-  if (!data || !data.userData || !data.currentUserData) return <NotFound />;
+  if (!data || !data.userData) return <NotFound />;
 
   return (
-    <div className="m-auto">
+    <div>
       <canvas ref={canvasRef} className="m-auto"></canvas>
 
-      <br className="py-2"></br>
-      <div className="px-96">
+      <div className="w-3/4 m-auto">
         <h1 className="font-bold text-4xl py-2">{data.character.name}</h1>
+
         <div className="flex">
           <a href={`/profile/${data.userData.id}`} className="flex">
             <Avatar>
@@ -218,9 +218,9 @@ export default function Character() {
           )}
         </div>
 
-        <div className="flex">
+        <div className="flex gap-5">
           {data.favoriteData ? (
-            <Form method="post" className="py-5">
+            <Form method="post">
               <input type="hidden" name="action" value="deleteFavorite" />
               <input type="hidden" name="id" value={data.character.id} />
 
@@ -230,7 +230,7 @@ export default function Character() {
               </Button>
             </Form>
           ) : (
-            <Form method="post" className="py-5">
+            <Form method="post">
               <input type="hidden" name="action" value="favorite" />
               <Button type="submit" className="bg-pink-300">
                 <Heart className="px-1" />
@@ -239,13 +239,13 @@ export default function Character() {
             </Form>
           )}
 
-          {data.currentUserData.current_character === data.character.id ? (
-            <p className="font-bold py-5 px-5 flex">
+          {data.currentUserData?.current_character === data.character.id ? (
+            <p className="font-bold flex">
               <UserCheck className="px-1" />
               使用中
             </p>
           ) : (
-            <Form method="post" className="py-5 px-5">
+            <Form method="post">
               <input type="hidden" name="action" value="use" />
               <Button type="submit">
                 <UserCheck className="px-1" />
@@ -256,7 +256,7 @@ export default function Character() {
 
           {data.currentUser &&
           data.character.postedby === data.currentUser.id ? (
-            <a href={`/character/edit/${data.character.id}`} className="py-5">
+            <a href={`/character/edit/${data.character.id}`}>
               <Button>
                 <Edit className="px-1" />
                 キャラクター情報を編集
@@ -266,13 +266,14 @@ export default function Character() {
             ""
           )}
 
-          <a href="/talk-vrm" className="py-5 px-5">
+          <a href="/talk-vrm">
             <Button>
               <Mic className="h-5 w-5" />
               <h1>MRでキャラクターとはなす</h1>
             </Button>
           </a>
         </div>
+
         {data.character.firstperson ? (
           <h1 className="py-2">一人称:{data.character.firstperson}</h1>
         ) : (

@@ -65,7 +65,7 @@ export default function Login() {
       <Form method="post" className="py-10">
         <div>
           <label htmlFor="title">email</label>
-          <Input type="text" name="email" id="email" />
+          <Input type="email" name="email" id="email" required />
         </div>
         <Button type="submit">ワンタイムパスワードを送信</Button>
       </Form>

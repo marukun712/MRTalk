@@ -20,17 +20,17 @@ export async function action({ request }: ActionFunctionArgs) {
   );
 
   const formData = await request.formData();
-  const otp = formData.get("otp");
+  const otp = formData.get("otp")?.toString();
 
   if (typeof otp !== "string" || typeof email !== "string") return null;
 
-  const { data } = await supabase.auth.verifyOtp({
+  const { error } = await supabase.auth.verifyOtp({
     email,
     token: otp,
     type: "email",
   });
 
-  if (data) {
+  if (!error) {
     return redirect(`/`, {
       headers: response.headers,
     });
@@ -41,11 +41,11 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function VerifyOTP() {
   return (
-    <div className="m-auto w-1/2 py-14">
+    <div className="m-auto md:w-1/2 w-3/4 py-14">
       <Form method="post" className="py-10">
         <div>
           <label htmlFor="title">ワンタイムパスワードを入力</label>
-          <Input type="text" name="otp" id="otp" />
+          <Input type="number" name="otp" id="otp" />
         </div>
         <Button type="submit">認証</Button>
       </Form>

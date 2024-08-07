@@ -494,8 +494,6 @@ export default function Three() {
                   className="pr-10 rounded-md bg-muted text-muted-foreground py-5 my-5"
                   name="key"
                   id="key"
-                  pattern="^sk-[a-zA-Z0-9]{32,}$"
-                  title="OpenAI APIキーを入力してください"
                 />
 
                 <Button type="submit">Enter</Button>
