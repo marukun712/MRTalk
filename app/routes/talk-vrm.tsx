@@ -83,6 +83,7 @@ export default function Three() {
       return;
     }
 
+    //WebXRを有効化
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -96,6 +97,7 @@ export default function Three() {
       })
     );
 
+    //シーンの作成
     const { scene, camera } = createScene(renderer);
 
     const clock = new THREE.Clock();
@@ -136,11 +138,13 @@ export default function Three() {
         vrm = model.userData.vrm;
         scene.add(model.scene);
 
-        model.scene.position.set(0, 0, 0);
+        model.scene.position.set(0, 100, 0);
 
+        //AnimationMixerの作成
         currentMixer = new THREE.AnimationMixer(model.scene);
         currentMixer.timeScale = params.timeScale;
 
+        //アニメーションの読み込み
         idolAnim = await loadMixamoAnimation(
           "./animations/Standing_Idle.fbx",
           vrm
@@ -157,6 +161,7 @@ export default function Three() {
       }
     }
 
+    //表情、アニメーションのリセット
     function resetEmotion() {
       currentMixer.clipAction(idolAnim).stop();
       currentMixer.clipAction(walkAnim).stop();
@@ -170,6 +175,7 @@ export default function Three() {
     }
 
     function setEmotion(emotion: string) {
+      //適用前にすべてのモーションをリセット
       resetEmotion();
 
       switch (emotion) {
@@ -199,12 +205,15 @@ export default function Three() {
 
     async function talk(text: string) {
       talking = true;
+
+      //20秒後に会話アニメーションを解除
       setTimeout(() => {
         talking = false;
         resetEmotion();
         currentMixer.clipAction(idolAnim).play();
       }, 20000);
 
+      //プレイヤー位置の取得
       const xrCamera = renderer.xr.getCamera();
       model.scene.lookAt(
         xrCamera.position.x,
@@ -222,14 +231,17 @@ export default function Three() {
       addFukidashi(message);
     }
 
+    //NavMeshのベイクとAgentのセットアップ
     function setupNavMeshAndCrowd(grounds: Mesh[]) {
       setTimeout(() => {
+        //モデルの高さを設定するために一番下のメッシュ(地面)を検出
         grounds.map((mesh: Mesh) => {
           if (!lowestGround || mesh.position.y < lowestGround.position.y) {
             lowestGround = mesh;
           }
         });
 
+        //生成
         const { navMesh } = threeToSoloNavMesh(grounds);
         if (!navMesh) return;
 
@@ -251,16 +263,20 @@ export default function Three() {
 
         setAgentTargetPosition();
 
+        //10秒おきにランダム地点に移動
         setInterval(() => {
           setAgentTargetPosition();
         }, 10000);
 
+        //500ミリ秒おきにモデル角度とアニメーションの状態更新
         setInterval(() => updateModelMovement(), 500);
-      }, 5000);
+      }, 5000); //WebXRの平面検出が終わるまで
     }
 
+    //ランダム地点を設定
     function setAgentTargetPosition() {
       if (!talkMode) {
+        //会話中は動かない
         const { randomPoint: point } = navMeshQuery.findRandomPointAroundCircle(
           new THREE.Vector3(),
           1
@@ -269,8 +285,11 @@ export default function Three() {
       }
     }
 
+    //モデルのアニメーションと角度の更新
     function updateModelMovement() {
       if (agent && !talking && !talkMode) {
+        //巡回の停止時と会話中は動かない
+
         const agentPosition = new THREE.Vector3(
           agent.position().x,
           agent.position().y,
@@ -282,13 +301,15 @@ export default function Three() {
           agent.target().z
         );
 
+        //agentからTargetまでの距離
         const distanceToTarget = agentPosition.distanceTo(agentDestination);
-        const thresholdDistance = 0.1;
+        const thresholdDistance = 0.1; //距離の閾値
 
         if (distanceToTarget > thresholdDistance) {
           currentMixer.clipAction(walkAnim).play();
           currentMixer.clipAction(idolAnim).stop();
 
+          //プレイヤーの方向を向く
           const direction = new THREE.Vector3()
             .subVectors(agentDestination, agentPosition)
             .normalize();
@@ -313,6 +334,7 @@ export default function Three() {
       }
     }
 
+    //エージェント巡回停止時のモーション切り替え
     function changeTalkMode(mode: boolean) {
       if (mode) {
         addFukidashi("キャラクターの巡回を停止");
@@ -332,6 +354,7 @@ export default function Three() {
         new THREE.Vector3(0, 0, -5),
       ]);
 
+      //コントローラーを検出
       const controller1 = renderer.xr.getController(0);
       controller1.add(new THREE.Line(geometry));
       scene.add(controller1);
@@ -354,6 +377,7 @@ export default function Three() {
       );
       scene.add(controllerGrip2);
 
+      //キー割り当て
       controllerGrip1.addEventListener("selectstart", () => {
         audioChunks.length = 0;
         addFukidashi("録音中...");
@@ -371,6 +395,7 @@ export default function Three() {
       });
     }
 
+    //録音の設定
     async function setupMediaRecorder() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -381,6 +406,8 @@ export default function Three() {
 
         mediaRecorder.onstart = () => console.log("Recording started");
         mediaRecorder.ondataavailable = (event) => audioChunks.push(event.data);
+
+        //録音完了時に文字起こしAPIにPOST
         mediaRecorder.onstop = async () => {
           const blob = new Blob(audioChunks, { type: "audio/wav" });
           const response = await fetch("/stt", {
@@ -390,7 +417,7 @@ export default function Three() {
           });
 
           const result = await response.json();
-          if (result) talk(result);
+          if (result) talk(result); //会話
         };
       } catch (e) {
         console.error(e);
@@ -403,12 +430,13 @@ export default function Three() {
       if (currentMixer) currentMixer.update(deltaTime);
       if (vrm) vrm.update(deltaTime);
 
+      //エージェントの巡回停止時と会話中はupdateを停止する
       if (crowd && agent && model && lowestGround && !talking && !talkMode) {
         crowd.update(1 / 60.0);
         const agentPos = agent.position();
         model.scene.position.set(
           agentPos.x,
-          lowestGround.position.y,
+          lowestGround.position.y, //モデルがちょうど床の高さに立つように
           agentPos.z
         );
       }
@@ -424,6 +452,7 @@ export default function Three() {
       renderer.render(scene, camera);
     }
 
+    //XRセッション開始時にセットアップ
     xr.addEventListener("sessionstart", async () => {
       setupNavMeshAndCrowd(grounds);
       setupControllers();
