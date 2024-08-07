@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import { FormEvent } from "react";
 
 type Props = {
   signin: boolean;
@@ -40,9 +41,9 @@ export default function Header(props: Props) {
     location.reload();
   };
 
-  const handleSubmit = (evt) => {
+  const handleSubmit = (evt: FormEvent) => {
     evt.preventDefault();
-    const form = new FormData(evt.target);
+    const form = new FormData(evt.target as HTMLFormElement);
     const query = form.get("query") || "";
 
     if (!query) return;
@@ -74,7 +75,7 @@ export default function Header(props: Props) {
           </Button>
         </form>
 
-        <a href="/three">
+        <a href="/talk-vrm">
           <Button>
             <Mic className="h-5 w-5" />
             <h1>MRでキャラクターとはなす</h1>

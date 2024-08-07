@@ -1,11 +1,12 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI();
-
 export async function OpenAIChat(
   prompt: string,
   systemPrompt: string,
+  key: string,
 ): Promise<string> {
+  const openai = new OpenAI({ apiKey: key });
+
   const completion = await openai.chat.completions.create({
     messages: [
       {

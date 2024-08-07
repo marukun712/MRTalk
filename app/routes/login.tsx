@@ -1,4 +1,4 @@
-import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs } from "@remix-run/node";
 import { Button } from "~/components/ui/button";
 import { useOutletContext, Form } from "@remix-run/react";
 import { Input } from "~/components/ui/input";
@@ -8,26 +8,7 @@ import {
 } from "@supabase/auth-helpers-remix";
 import { Database } from "database.types";
 import { redirect } from "@remix-run/node";
-
-export async function loader({ request }: LoaderFunctionArgs) {
-  const response = new Response();
-
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) return redirect("/");
-  return null;
-}
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
 
 export async function action({ request }: ActionFunctionArgs) {
   const response = new Response();
@@ -76,9 +57,11 @@ export default function Login() {
       <h1 className="text-4xl font-bold text-center py-10">
         TalkWithVRMにログイン
       </h1>
-      <Button onClick={handleGitHubLogin} className="my-12">
+      <Button onClick={handleGitHubLogin} className="my-6">
+        <GitHubLogoIcon className="mx-2" />
         GitHub Login
       </Button>
+
       <Form method="post" className="py-10">
         <div>
           <label htmlFor="title">email</label>
@@ -86,6 +69,13 @@ export default function Login() {
         </div>
         <Button type="submit">ワンタイムパスワードを送信</Button>
       </Form>
+
+      <h1>
+        アカウントを持っていませんか?{" "}
+        <a href="/signup" className="text-blue-400">
+          サインアップ
+        </a>
+      </h1>
     </div>
   );
 }

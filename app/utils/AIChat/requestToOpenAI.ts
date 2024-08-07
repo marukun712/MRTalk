@@ -1,6 +1,7 @@
 export async function requestToOpenAI(
   text: string,
   character: any,
+  apiKey: string,
 ): Promise<{ content: string; emotion: string }> {
   const body = JSON.stringify({
     text: text,
@@ -14,6 +15,7 @@ export async function requestToOpenAI(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "Authorization": `${apiKey}`,
     },
     body: body,
   });

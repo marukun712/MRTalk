@@ -3,6 +3,10 @@ import { ActionFunctionArgs } from "@remix-run/node";
 
 export async function action({ request }: ActionFunctionArgs) {
   const json = await request.json();
+  const headers = await request.headers;
+  const apiKey = headers.get("Authorization");
+
+  if (!apiKey) return;
 
   const systemPrompt = `あなたの名前は「${json.name}」です。あなたの一人称は「${
     json.firstperson
@@ -15,7 +19,7 @@ export async function action({ request }: ActionFunctionArgs) {
       ? `あなたの詳細設定は以下の通りです。${json.details} 以上の詳細設定を、忠実に守ってください。`
       : ""
   }深呼吸して、リラックスして考えてください。あなたは必ずレスポンスをJSON形式で返します。あなたはJoy,Fun,Sorrow,Angryの四つの感情を持ちます。感情のスコアと、一番大きな感情を、必ずJSONで出力します。`;
-  const message = await OpenAIChat(json.text, systemPrompt);
+  const message = await OpenAIChat(json.text, systemPrompt, apiKey);
 
   const result = JSON.parse(message);
   return new Response(JSON.stringify(result), {

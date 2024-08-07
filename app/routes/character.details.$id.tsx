@@ -11,7 +11,7 @@ import { loadMixamoAnimation } from "~/utils/VRM/loadMixamoAnimation";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import NotFound from "~/components/ui/404";
-import { Heart, HeartOff, Edit, UserCheck, Eye } from "lucide-react";
+import { Heart, HeartOff, Edit, UserCheck, Eye, Mic } from "lucide-react";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -265,6 +265,13 @@ export default function Character() {
           ) : (
             ""
           )}
+
+          <a href="/talk-vrm" className="py-5 px-5">
+            <Button>
+              <Mic className="h-5 w-5" />
+              <h1>MRでキャラクターとはなす</h1>
+            </Button>
+          </a>
         </div>
         {data.character.firstperson ? (
           <h1 className="py-2">一人称:{data.character.firstperson}</h1>

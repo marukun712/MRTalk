@@ -1,7 +1,7 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useCallback, useRef, useState, FormEvent } from "react";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { createServerClient } from "@supabase/auth-helpers-remix";
-import { redirect, useLoaderData } from "@remix-run/react";
+import { Form, redirect, useLoaderData } from "@remix-run/react";
 
 import * as THREE from "three";
 import { ARButton } from "three/addons/webxr/ARButton.js";
@@ -21,6 +21,15 @@ import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFa
 
 import { VOICEVOXTTS } from "~/utils/AIChat/VOICEVOX";
 import { requestToOpenAI } from "~/utils/AIChat/requestToOpenAI";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
+import { Input } from "~/components/ui/input";
+import { Button } from "~/components/ui/button";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -61,6 +70,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export default function Three() {
   const data = useLoaderData<typeof loader>();
   const initialized = useRef(false);
+  const [key, SetKey] = useState<string>("");
+  const [open, setOpen] = useState(true);
 
   const setupThree = useCallback(async () => {
     if (!data || initialized.current) return;
@@ -202,7 +213,7 @@ export default function Three() {
       );
       addFukidashi("考え中...");
 
-      const res = await requestToOpenAI(text, character);
+      const res = await requestToOpenAI(text, character, key);
       const message = res.content;
       const emotion = res.emotion;
       VOICEVOXTTS(res.content);
@@ -420,11 +431,50 @@ export default function Three() {
     });
 
     await loadCharacterModel();
-  }, [data]);
+  }, [data, key]);
 
   useEffect(() => {
-    setupThree();
-  }, [setupThree]);
+    if (key) {
+      setupThree();
+    }
+  }, [setupThree, key]);
 
-  return <div></div>;
+  const handleSubmit = (evt: FormEvent) => {
+    evt.preventDefault();
+    const form = new FormData(evt.target as HTMLFormElement);
+    const apikey = form.get("key") as string;
+
+    if (!apikey) return;
+    setOpen(false);
+    SetKey(apikey);
+  };
+
+  return (
+    <div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>OpenAIのAPIキーを入力</DialogTitle>
+            <div>
+              <Form
+                onSubmit={handleSubmit}
+                className="relative w-full max-w-md"
+              >
+                <Input
+                  placeholder="APIキーを入力..."
+                  className="pr-10 rounded-md bg-muted text-muted-foreground py-5 my-5"
+                  name="key"
+                  id="key"
+                  pattern="^sk-[a-zA-Z0-9]{32,}$"
+                  title="OpenAI APIキーを入力してください"
+                />
+
+                <Button type="submit">Enter</Button>
+              </Form>
+            </div>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }
