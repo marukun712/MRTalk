@@ -1,5 +1,4 @@
 import { Avatar, AvatarImage, AvatarFallback } from "~/components/ui/avatar";
-import { createServerClient } from "@supabase/auth-helpers-remix";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import NotFound from "~/components/ui/404";
 import { useLoaderData } from "@remix-run/react";
@@ -7,19 +6,13 @@ import CharacterCard from "~/components/selectCharacter/CharacterCard";
 import { Button } from "~/components/ui/button";
 import CharacterList from "~/components/selectCharacter/CharacterList";
 import { Edit } from "lucide-react";
+import { serverClient } from "~/utils/Supabase/ServerClient";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const response = new Response();
   const id = params.id;
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const {
     data: { user: currentUser },
@@ -27,7 +20,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
   const { data: character } = await supabase
     .from("characters")
-    .select("id,name,model_url,ending,details,firstperson,postedby")
+    .select("*")
     .eq("postedby", id);
 
   const { data: userData } = await supabase

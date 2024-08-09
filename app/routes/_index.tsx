@@ -1,22 +1,17 @@
 import { Button } from "~/components/ui/button";
-import { Box, PlusIcon } from "lucide-react";
-import { createServerClient } from "@supabase/auth-helpers-remix";
+import { Box, PersonStanding, PlusIcon } from "lucide-react";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import CharacterCard from "~/components/selectCharacter/CharacterCard";
 import CharacterList from "~/components/selectCharacter/CharacterList";
+import { ChatBubbleIcon, GitHubLogoIcon } from "@radix-ui/react-icons";
+import FeatureCard from "~/components/TopPage/FeatureCard";
+import { serverClient } from "~/utils/Supabase/ServerClient";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   return await supabase
     .from("characters")
@@ -86,6 +81,27 @@ export default function Index() {
             </div>
           </div>
         </section>
+
+        <div className="text-center text-2xl font-bold mt-8">
+          3ステップで簡単に会話
+        </div>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3 w-full max-w-6xl mt-4 m-auto">
+          <FeatureCard
+            step="1"
+            title="Githubアカウントでログイン"
+            icon={<GitHubLogoIcon className="w-12 h-12" />}
+          />
+          <FeatureCard
+            step="2"
+            title="キャラクターを選択"
+            icon={<PersonStanding className="w-12 h-12" />}
+          />
+          <FeatureCard
+            step="3"
+            title="MRでキャラクターと会話する"
+            icon={<ChatBubbleIcon className="w-12 h-12" />}
+          />
+        </div>
 
         <CharacterList title="最新のキャラクター">
           {data?.map((character) => {

@@ -1,23 +1,16 @@
 import { Form, useLoaderData, redirect } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { createServerClient } from "@supabase/auth-helpers-remix";
 import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import NotFound from "~/components/ui/404";
 import { Edit } from "lucide-react";
+import { serverClient } from "~/utils/Supabase/ServerClient";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const response = new Response();
   const id = params.id;
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const { data: userData } = await supabase
     .from("profiles")
@@ -32,14 +25,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
   const response = new Response();
   const id = params.id;
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const formData = await request.formData();
 

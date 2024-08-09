@@ -1,33 +1,21 @@
 import { Form } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { createServerClient } from "@supabase/auth-helpers-remix";
 import {
   ActionFunctionArgs,
   LoaderFunctionArgs,
   redirect,
 } from "@remix-run/node";
 import { Textarea } from "~/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
+
 import { PlusIcon } from "lucide-react";
+import { serverClient } from "~/utils/Supabase/ServerClient";
+import SelectPublic from "~/components/CharacterEdit/SelectPublic";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const {
     data: { user },
@@ -41,14 +29,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 export async function action({ request }: ActionFunctionArgs) {
   const response = new Response();
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const formData = await request.formData();
 
@@ -111,15 +92,7 @@ export default function AddCharacter() {
         </div>
         <div>
           <label htmlFor="is_public">公開設定</label>
-          <Select name="is_public" required>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="公開設定" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="FALSE">非公開</SelectItem>
-              <SelectItem value="TRUE">公開</SelectItem>
-            </SelectContent>
-          </Select>
+          <SelectPublic />
         </div>
         <div>
           <label htmlFor="firstperson">一人称</label>
@@ -135,7 +108,7 @@ export default function AddCharacter() {
         </div>
         <Button type="submit" className="bg-green-500 text-black my-12">
           <PlusIcon />
-          編集を確定
+          投稿する
         </Button>
       </Form>
     </div>

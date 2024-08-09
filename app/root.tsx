@@ -12,13 +12,11 @@ import type { LinksFunction } from "@remix-run/node";
 import stylesheet from "~/tailwind.css?url";
 import fontstyle from "~/font.css?url";
 import { useState, useEffect } from "react";
-import {
-  createBrowserClient,
-  createServerClient,
-} from "@supabase/auth-helpers-remix";
+import { createBrowserClient } from "@supabase/auth-helpers-remix";
 import { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import Header from "./components/ui/header";
 import NotFound from "./components/ui/404";
+import { serverClient } from "./utils/Supabase/ServerClient";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -40,14 +38,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   const response = new Response();
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const {
     data: { session },

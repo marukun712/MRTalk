@@ -1,7 +1,7 @@
 import { redirect } from "@remix-run/node";
-import { createServerClient } from "@supabase/auth-helpers-remix";
 
 import type { LoaderFunctionArgs } from "@remix-run/node";
+import { serverClient } from "~/utils/Supabase/ServerClient";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const response = new Response();
@@ -11,12 +11,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   console.log(code);
 
   if (code) {
-    const supabaseClient = createServerClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_ANON_KEY!,
-      { request, response }
-    );
-    await supabaseClient.auth.exchangeCodeForSession(code);
+    const supabase = serverClient(request, response);
+
+    await supabase.auth.exchangeCodeForSession(code);
   }
 
   return redirect("/", {

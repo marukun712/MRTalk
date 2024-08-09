@@ -16,6 +16,7 @@ type Props = {
 export default function CharacterCard(props: Props) {
   const [thumbnail, setThumbnail] = useState<string>("");
   const [postedBy, setPostedBy] = useState<string>("");
+
   const { supabase } = useOutletContext<{
     supabase: SupabaseClient<Database>;
   }>();

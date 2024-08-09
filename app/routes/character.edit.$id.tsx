@@ -1,64 +1,34 @@
 import { Form, useLoaderData, redirect } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
-import { createServerClient } from "@supabase/auth-helpers-remix";
 import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import { Textarea } from "~/components/ui/textarea";
 import NotFound from "~/components/ui/404";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "~/components/ui/dialog";
-import { Edit, Trash } from "lucide-react";
+
+import { Edit } from "lucide-react";
+import { serverClient } from "~/utils/Supabase/ServerClient";
+import DeleteConfirmDialog from "~/components/CharacterEdit/DeleteConfirmDialog";
+import SelectPublic from "~/components/CharacterEdit/SelectPublic";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const response = new Response();
   const id = params.id;
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return redirect("/login");
 
-  return await supabase
-    .from("characters")
-    .select("id,name,model_url,ending,details,firstperson,postedby,is_public")
-    .eq("id", id)
-    .single();
+  return await supabase.from("characters").select("*").eq("id", id).single();
 }
 
 export async function action({ params, request }: ActionFunctionArgs) {
   const response = new Response();
   const id = params.id;
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const formData = await request.formData();
   const action = formData.get("action");
@@ -68,8 +38,8 @@ export async function action({ params, request }: ActionFunctionArgs) {
     const model_url = formData.get("model_url");
     const is_public = formData.get("is_public");
     const firstperson = formData.get("firstperson");
-    const ending = formData.get("ending") as string | null;
-    const details = formData.get("details") as string | null;
+    const ending = formData.get("ending");
+    const details = formData.get("details");
 
     if (
       typeof name !== "string" ||
@@ -109,7 +79,7 @@ export default function EditCharacter() {
       </h1>
 
       <Form method="post" className="py-10">
-        <input type="hidden" name="action" value="edit" />
+        <Input type="hidden" name="action" value="edit" />
 
         <div>
           <label htmlFor="name">キャラクター名</label>
@@ -135,15 +105,7 @@ export default function EditCharacter() {
         </div>
         <div>
           <label htmlFor="is_public">公開設定</label>
-          <Select name="is_public" required>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="公開設定" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="FALSE">非公開</SelectItem>
-              <SelectItem value="TRUE">公開</SelectItem>
-            </SelectContent>
-          </Select>
+          <SelectPublic />
         </div>
         <div>
           <label htmlFor="firstperson">一人称</label>
@@ -180,31 +142,7 @@ export default function EditCharacter() {
         </Button>
       </Form>
 
-      <Dialog>
-        <DialogTrigger>
-          <Button className="bg-red-500">
-            <Trash />
-            キャラクターを削除
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="text-center my-5">
-              本当にキャラクターを削除しますか?
-            </DialogTitle>
-          </DialogHeader>
-          <DialogFooter>
-            <Form method="post">
-              <input type="hidden" name="action" value="delete" />
-
-              <Button type="submit" className="bg-red-500">
-                <Trash />
-                キャラクターを削除
-              </Button>
-            </Form>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirmDialog />
     </div>
   );
 }

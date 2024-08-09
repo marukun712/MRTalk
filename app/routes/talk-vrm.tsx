@@ -1,6 +1,5 @@
 import { useEffect, useCallback, useRef, useState, FormEvent } from "react";
 import { LoaderFunctionArgs } from "@remix-run/node";
-import { createServerClient } from "@supabase/auth-helpers-remix";
 import { Form, redirect, useLoaderData } from "@remix-run/react";
 
 import * as THREE from "three";
@@ -30,35 +29,29 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { serverClient } from "~/utils/Supabase/ServerClient";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return redirect("/login");
 
-  const { data: profileData } = await supabase
+  const { data: currentUserData } = await supabase
     .from("profiles")
     .select("current_character")
     .eq("id", user.id);
 
-  if (!profileData || profileData.length === 0) return null;
-  const characterID = profileData[0].current_character;
+  if (!currentUserData || currentUserData.length === 0) return null;
+  const characterID = currentUserData[0].current_character;
 
   const { data: characterData } = await supabase
     .from("characters")
-    .select("id,name,model_url,ending,details,firstperson,postedby")
+    .select("*")
     .eq("id", characterID)
     .single();
 
@@ -74,7 +67,15 @@ export default function Three() {
   const [open, setOpen] = useState(true);
 
   const setupThree = useCallback(async () => {
-    if (!data || initialized.current) return;
+    if (!data) {
+      alert(
+        "キャラクターデータの取得に失敗しました。キャラクターが設定されているか確認してください。"
+      );
+      return;
+    }
+
+    if (initialized.current) return;
+
     initialized.current = true;
 
     await init();
@@ -157,7 +158,7 @@ export default function Three() {
         );
         angryAnim = await loadMixamoAnimation("./animations/Angry.fbx", vrm);
       } catch (e) {
-        console.error(e);
+        alert("キャラクターの読み込みに失敗しました。");
       }
     }
 
@@ -494,6 +495,8 @@ export default function Three() {
                   className="pr-10 rounded-md bg-muted text-muted-foreground py-5 my-5"
                   name="key"
                   id="key"
+                  pattern="^sk-[a-zA-Z0-9\-_]{1,}$"
+                  title="OpenAI APIキーを入力してください!"
                 />
 
                 <Button type="submit">Enter</Button>

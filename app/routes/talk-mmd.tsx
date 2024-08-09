@@ -1,6 +1,5 @@
 import { useEffect, useCallback, useRef, useState, FormEvent } from "react";
 import { LoaderFunctionArgs } from "@remix-run/node";
-import { createServerClient } from "@supabase/auth-helpers-remix";
 import { Form, redirect, useLoaderData } from "@remix-run/react";
 
 import * as THREE from "three";
@@ -28,35 +27,29 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { serverClient } from "~/utils/Supabase/ServerClient";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return redirect("/login");
 
-  const { data: profileData } = await supabase
+  const { data: currentUserData } = await supabase
     .from("profiles")
     .select("current_character")
     .eq("id", user.id);
 
-  if (!profileData || profileData.length === 0) return null;
-  const characterID = profileData[0].current_character;
+  if (!currentUserData || currentUserData.length === 0) return null;
+  const characterID = currentUserData[0].current_character;
 
   const { data: characterData } = await supabase
     .from("characters")
-    .select("id,name,model_url,ending,details,firstperson,postedby")
+    .select("*")
     .eq("id", characterID)
     .single();
 
@@ -131,24 +124,28 @@ export default function Three() {
     const modelURL = "./mmd/桜乃そら/桜乃そら.pmx";
 
     async function loadCharacterModel() {
-      mmdModel = await LoadMMD(modelURL);
+      try {
+        mmdModel = await LoadMMD(modelURL);
 
-      scene.add(mmdModel);
+        scene.add(mmdModel);
 
-      mmdModel.position.set(0, 100, 0);
+        mmdModel.position.set(0, 100, 0);
 
-      mmdModel.scale.set(0.08, 0.08, 0.08);
+        mmdModel.scale.set(0.08, 0.08, 0.08);
 
-      //AnimationMixerの作成
-      currentMixer = new THREE.AnimationMixer(mmdModel);
-      currentMixer.timeScale = params.timeScale;
+        //AnimationMixerの作成
+        currentMixer = new THREE.AnimationMixer(mmdModel);
+        currentMixer.timeScale = params.timeScale;
 
-      //アニメーションの読み込み
-      idolAnim = await LoadMMDAnim("./mmd/anim/idle.vmd", mmdModel);
-      walkAnim = await LoadMMDAnim("./mmd/anim/walk.vmd", mmdModel);
-      joyAnim = await LoadMMDAnim("./mmd/anim/わーい.vmd", mmdModel);
-      sorrowAnim = await LoadMMDAnim("./mmd/anim/えー.vmd", mmdModel);
-      angryAnim = await LoadMMDAnim("./mmd/anim/なによっ.vmd", mmdModel);
+        //アニメーションの読み込み
+        idolAnim = await LoadMMDAnim("./mmd/anim/idle.vmd", mmdModel);
+        walkAnim = await LoadMMDAnim("./mmd/anim/walk.vmd", mmdModel);
+        joyAnim = await LoadMMDAnim("./mmd/anim/わーい.vmd", mmdModel);
+        sorrowAnim = await LoadMMDAnim("./mmd/anim/えー.vmd", mmdModel);
+        angryAnim = await LoadMMDAnim("./mmd/anim/なによっ.vmd", mmdModel);
+      } catch (e) {
+        alert("キャラクターの読み込みに失敗しました。");
+      }
     }
 
     //表情、アニメーションのリセット
@@ -472,6 +469,8 @@ export default function Three() {
                   className="pr-10 rounded-md bg-muted text-muted-foreground py-5 my-5"
                   name="key"
                   id="key"
+                  pattern="^sk-[a-zA-Z0-9\-_]{1,}$"
+                  title="OpenAI APIキーを入力してください!"
                 />
 
                 <Button type="submit">Enter</Button>

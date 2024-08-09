@@ -2,22 +2,15 @@ import type { ActionFunctionArgs } from "@remix-run/node";
 import { Button } from "~/components/ui/button";
 import { Form } from "@remix-run/react";
 import { Input } from "~/components/ui/input";
-import { createServerClient } from "@supabase/auth-helpers-remix";
 import { redirect } from "@remix-run/node";
+import { serverClient } from "~/utils/Supabase/ServerClient";
 
 export async function action({ request }: ActionFunctionArgs) {
   const response = new Response();
   const url = new URL(request.url);
   const email = url.searchParams.get("email");
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const formData = await request.formData();
   const otp = formData.get("otp")?.toString();

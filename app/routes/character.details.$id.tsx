@@ -1,7 +1,6 @@
 import { VRM } from "@pixiv/three-vrm";
 import { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { useActionData, useLoaderData, Form, redirect } from "@remix-run/react";
-import { createServerClient } from "@supabase/auth-helpers-remix";
 import { useEffect, useRef, useCallback } from "react";
 import * as THREE from "three";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
@@ -11,20 +10,22 @@ import { loadMixamoAnimation } from "~/utils/VRM/loadMixamoAnimation";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import NotFound from "~/components/ui/404";
-import { Heart, HeartOff, Edit, UserCheck, Eye, Mic } from "lucide-react";
+import {
+  Heart,
+  HeartOff,
+  Edit,
+  UserCheck,
+  Eye,
+  Mic,
+  EyeOffIcon,
+} from "lucide-react";
+import { serverClient } from "~/utils/Supabase/ServerClient";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const response = new Response();
   const id = params.id;
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const {
     data: { user: currentUser },
@@ -32,7 +33,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
   const { data: character } = await supabase
     .from("characters")
-    .select("id,name,model_url,ending,details,firstperson,postedby,is_public")
+    .select("*")
     .eq("id", id)
     .single();
 
@@ -44,7 +45,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     .eq("id", currentUser?.id)
     .single();
 
-  const { data: userData } = await supabase
+  const { data: authorData } = await supabase
     .from("profiles")
     .select("id,avatar_url,full_name")
     .eq("id", character.postedby)
@@ -56,21 +57,14 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     .eq("model_id", character.id)
     .single();
 
-  return { userData, character, currentUser, favoriteData, currentUserData };
+  return { authorData, character, currentUser, favoriteData, currentUserData };
 }
 
 export async function action({ params, request }: ActionFunctionArgs) {
   const response = new Response();
   const id = params.id;
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const {
     data: { user },
@@ -114,7 +108,14 @@ export default function Character() {
   const initialized = useRef(false);
 
   const setupThree = useCallback(async () => {
-    if (canvasRef.current == null || !data || initialized.current) return;
+    if (!data) {
+      alert(
+        "キャラクターデータの取得に失敗しました。キャラクターが設定されているか確認してください。"
+      );
+      return;
+    }
+
+    if (canvasRef.current == null || initialized.current) return;
     initialized.current = true;
 
     const renderer = new THREE.WebGLRenderer({
@@ -156,7 +157,7 @@ export default function Character() {
       idolAnim = await loadMixamoAnimation("../../animations/Dancing.fbx", vrm);
       currentMixer.clipAction(idolAnim).play();
     } catch (e) {
-      console.log(e);
+      alert("キャラクターの読み込みに失敗しました。");
     }
 
     function animate() {
@@ -184,7 +185,7 @@ export default function Character() {
     alert(result);
   }, [result]);
 
-  if (!data || !data.userData) return <NotFound />;
+  if (!data || !data.authorData) return <NotFound />;
 
   return (
     <div>
@@ -193,17 +194,17 @@ export default function Character() {
       <div className="w-3/4 m-auto">
         <h1 className="font-bold text-4xl py-2">{data.character.name}</h1>
 
-        <div className="flex">
-          <a href={`/profile/${data.userData.id}`} className="flex">
+        <div className="md:flex">
+          <a href={`/profile/${data.authorData.id}`} className="flex">
             <Avatar>
               <AvatarImage
-                src={data.userData.avatar_url}
-                alt={data.userData.full_name}
+                src={data.authorData.avatar_url}
+                alt={data.authorData.full_name}
               />
-              <AvatarFallback>{data.userData.full_name}</AvatarFallback>
+              <AvatarFallback>{data.authorData.full_name}</AvatarFallback>
             </Avatar>
             <h1 className="text-gray-400 px-2">
-              {data.userData.full_name} が投稿
+              {data.authorData.full_name} が投稿
             </h1>
           </a>
           {data.currentUser &&
@@ -214,11 +215,14 @@ export default function Character() {
               公開されています
             </p>
           ) : (
-            ""
+            <p className="font-bold flex">
+              <EyeOffIcon className="mx-2" />
+              公開されていません
+            </p>
           )}
         </div>
 
-        <div className="flex gap-5">
+        <div className="md:flex gap-5">
           {data.favoriteData ? (
             <Form method="post">
               <input type="hidden" name="action" value="deleteFavorite" />

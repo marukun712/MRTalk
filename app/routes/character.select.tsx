@@ -1,26 +1,31 @@
 import { useLoaderData, redirect } from "@remix-run/react";
-import { createServerClient } from "@supabase/auth-helpers-remix";
 import { LoaderFunctionArgs } from "@remix-run/node";
 import CharacterCard from "~/components/selectCharacter/CharacterCard";
 import CharacterList from "~/components/selectCharacter/CharacterList";
+import { serverClient } from "~/utils/Supabase/ServerClient";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
 
-  const supabase = createServerClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    {
-      request,
-      response,
-    }
-  );
+  const supabase = serverClient(request, response);
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) return redirect("/login");
+
+  const { data: currentUserData } = await supabase
+    .from("profiles")
+    .select("id,avatar_url,full_name,current_character")
+    .eq("id", user?.id)
+    .single();
+
+  const { data: currentCharacter } = await supabase
+    .from("characters")
+    .select("id,name,model_url,postedby")
+    .eq("id", currentUserData?.current_character)
+    .single();
 
   const { data: myCharacter } = await supabase
     .from("characters")
@@ -32,7 +37,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .select("characters(*)")
     .eq("user_id", user.id);
 
-  return { myCharacter, favorites };
+  return { myCharacter, favorites, currentCharacter };
 }
 
 export default function SelectCharacter() {
@@ -40,6 +45,16 @@ export default function SelectCharacter() {
 
   return (
     <div>
+      <CharacterList title="使用中">
+        <CharacterCard
+          id={data.currentCharacter?.id}
+          name={data.currentCharacter?.name}
+          model_url={data.currentCharacter?.model_url}
+          key={data.currentCharacter?.id}
+          postedby={data.currentCharacter?.postedby}
+        />
+      </CharacterList>
+
       <CharacterList title="あなたのキャラクター">
         {data?.myCharacter?.map((character) => {
           return (
@@ -55,7 +70,7 @@ export default function SelectCharacter() {
       </CharacterList>
 
       <CharacterList title="お気に入りのキャラクター">
-        {data?.favorites?.map((favorite) => {
+        {data?.favorites?.map((favorite: any) => {
           return (
             <CharacterCard
               id={favorite.characters.id}
