@@ -205,7 +205,7 @@ export default function Three() {
       const res = await requestToOpenAI(text, character, key);
       const message = res.content;
       const emotion = res.emotion;
-      VOICEVOXTTS(res.content);
+      VOICEVOXTTS(res.content, character.speaker_id);
 
       setEmotion(emotion);
       addFukidashi(message);

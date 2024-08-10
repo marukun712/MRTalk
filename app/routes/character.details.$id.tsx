@@ -155,6 +155,7 @@ export default function Character() {
       currentMixer.timeScale = params.timeScale;
 
       idolAnim = await loadMixamoAnimation("../../animations/Dancing.fbx", vrm);
+
       currentMixer.clipAction(idolAnim).play();
     } catch (e) {
       alert("キャラクターの読み込みに失敗しました。");
@@ -295,6 +296,8 @@ export default function Character() {
         ) : (
           ""
         )}
+
+        <h1 className="py-4">話者ID:{data.character.speaker_id}</h1>
       </div>
     </div>
   );

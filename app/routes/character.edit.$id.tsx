@@ -40,17 +40,27 @@ export async function action({ params, request }: ActionFunctionArgs) {
     const firstperson = formData.get("firstperson");
     const ending = formData.get("ending");
     const details = formData.get("details");
+    const speaker_id = Number(formData.get("speakerID"));
 
     if (
       typeof name !== "string" ||
       typeof model_url !== "string" ||
-      typeof is_public !== "string"
+      typeof is_public !== "string" ||
+      typeof speaker_id !== "number"
     )
       return null;
 
     const { error } = await supabase
       .from("characters")
-      .update({ name, model_url, is_public, firstperson, ending, details })
+      .update({
+        name,
+        model_url,
+        is_public,
+        firstperson,
+        ending,
+        details,
+        speaker_id,
+      })
       .eq("id", id);
 
     if (!error) return redirect(`/character/details/${id}`);
@@ -133,6 +143,27 @@ export default function EditCharacter() {
             id="details"
             className="h-36"
             defaultValue={data.details}
+          />
+        </div>
+        <div>
+          <label htmlFor="speakerID">話者ID(VOICEVOX)</label>
+          <p>
+            話者IDは{" "}
+            <a
+              href="https://marukun-dev.com/tts/speakers"
+              className="text-blue-300"
+            >
+              こちら
+            </a>
+            を参照してください。
+          </p>
+          <Input
+            type="number"
+            name="speakerID"
+            id="speakerID"
+            defaultValue={data.speaker_id}
+            max={88}
+            required
           />
         </div>
 

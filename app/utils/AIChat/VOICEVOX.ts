@@ -1,5 +1,5 @@
-export async function VOICEVOXTTS(text: string) {
-  const req = await fetch(`/tts`, {
+export async function VOICEVOXTTS(text: string, spekaerID: number) {
+  const req = await fetch(`/tts?speaker=${spekaerID}`, {
     method: "POST",
     body: text,
   });

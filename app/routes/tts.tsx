@@ -3,11 +3,13 @@ import { ActionFunctionArgs } from "@remix-run/node";
 const url = "https://marukun-dev.com/tts/";
 
 export async function action({ request }: ActionFunctionArgs) {
+  const { searchParams } = new URL(request.url);
+  const speaker = Number(searchParams.get("speaker"));
   try {
     const text = await request.text();
 
     const audio_query_response = await fetch(
-      `${url}/audio_query?text=${encodeURIComponent(text)}&speaker=20`,
+      `${url}/audio_query?text=${encodeURIComponent(text)}&speaker=${speaker}`,
       {
         method: "POST",
       }
