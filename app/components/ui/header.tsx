@@ -11,7 +11,6 @@ import {
   Settings,
   UserIcon,
   Box,
-  Mic,
   PlusIcon,
 } from "lucide-react";
 
@@ -74,13 +73,6 @@ export default function Header(props: Props) {
             <SearchIcon className="h-5 w-5" />
           </Button>
         </form>
-
-        <a href="/talk-vrm">
-          <Button>
-            <Mic className="h-5 w-5" />
-            <h1>MRでキャラクターとはなす</h1>
-          </Button>
-        </a>
 
         <div className="flex items-center gap-4">
           {props.signin ? (

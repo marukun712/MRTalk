@@ -271,7 +271,7 @@ export default function Character() {
             ""
           )}
 
-          <a href="/talk-vrm">
+          <a href="/talk">
             <Button>
               <Mic className="h-5 w-5" />
               <h1>MRでキャラクターとはなす</h1>
