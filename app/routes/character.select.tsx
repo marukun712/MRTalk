@@ -15,18 +15,6 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   if (!user) return redirect("/login");
 
-  const { data: currentUserData } = await supabase
-    .from("profiles")
-    .select("id,avatar_url,full_name,current_character")
-    .eq("id", user?.id)
-    .single();
-
-  const { data: currentCharacter } = await supabase
-    .from("characters")
-    .select("id,name,model_url,postedby")
-    .eq("id", currentUserData?.current_character)
-    .single();
-
   const { data: myCharacter } = await supabase
     .from("characters")
     .select("id,name,model_url,postedby")
@@ -37,7 +25,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     .select("characters(*)")
     .eq("user_id", user.id);
 
-  return { myCharacter, favorites, currentCharacter };
+  return { myCharacter, favorites };
 }
 
 export default function SelectCharacter() {
@@ -45,16 +33,6 @@ export default function SelectCharacter() {
 
   return (
     <div>
-      <CharacterList title="使用中">
-        <CharacterCard
-          id={data.currentCharacter?.id}
-          name={data.currentCharacter?.name}
-          model_url={data.currentCharacter?.model_url}
-          key={data.currentCharacter?.id}
-          postedby={data.currentCharacter?.postedby}
-        />
-      </CharacterList>
-
       <CharacterList title="あなたのキャラクター">
         {data?.myCharacter?.map((character) => {
           return (

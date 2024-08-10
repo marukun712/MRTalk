@@ -1,13 +1,13 @@
 import { useEffect, useCallback, useRef, useState, FormEvent } from "react";
 import { LoaderFunctionArgs } from "@remix-run/node";
-import { Form, redirect, useLoaderData } from "@remix-run/react";
+import { Form, useLoaderData } from "@remix-run/react";
 import * as THREE from "three";
 import { ARButton } from "three/addons/webxr/ARButton.js";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { VRM } from "@pixiv/three-vrm";
 
-import { setupNavMeshAndCrowd } from "~/utils/Three/setupNavMeshAndCrowd";
-import { setupControllers } from "~/utils/Three/controllerSetup";
+import { setupNavMeshAndCrowd } from "~/utils/WebXR/setupNavMeshAndCrowd";
+import { setupControllers } from "~/utils/WebXR/controllerSetup";
 import { setupMediaRecorder } from "~/utils/AIChat/mediaRecorderSetup";
 import { resetEmotion, setEmotion } from "~/utils/AIChat/emotionAndTextbox";
 
@@ -17,8 +17,8 @@ import { loadMixamoAnimation } from "~/utils/VRM/loadMixamoAnimation";
 import { LoadMMDAnim } from "~/utils/MMD/LoadMMDAnim";
 import { VOICEVOXTTS } from "~/utils/AIChat/VOICEVOX";
 import { requestToOpenAI } from "~/utils/AIChat/requestToOpenAI";
-import { XRPlanes } from "~/utils/Three/XRPlanes";
-import { createScene } from "~/utils/Three/createScene";
+import { XRPlanes } from "~/utils/WebXR/XRPlanes";
+import { createScene } from "~/utils/WebXR/createScene";
 
 import {
   Dialog,
@@ -32,27 +32,16 @@ import { serverClient } from "~/utils/Supabase/ServerClient";
 import { init, Crowd, CrowdAgent, NavMeshQuery } from "recast-navigation";
 import SpriteText from "three-spritetext";
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export async function loader({ params, request }: LoaderFunctionArgs) {
   const response = new Response();
   const supabase = serverClient(request, response);
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return redirect("/login");
-
-  const { data: currentUserData } = await supabase
-    .from("profiles")
-    .select("current_character")
-    .eq("id", user.id);
-
-  if (!currentUserData || currentUserData.length === 0) return null;
-  const characterID = currentUserData[0].current_character;
+  const id = params.id;
 
   const { data: characterData } = await supabase
     .from("characters")
     .select("*")
-    .eq("id", characterID)
+    .eq("id", id)
     .single();
 
   if (!characterData) return null;
@@ -138,23 +127,23 @@ export default function Three() {
 
           if (!vrm) return;
           animations.idle = await loadMixamoAnimation(
-            "./animations/Standing_Idle.fbx",
+            "../animations/Standing_Idle.fbx",
             vrm
           );
           animations.walk = await loadMixamoAnimation(
-            "./animations/Walking.fbx",
+            "../animations/Walking.fbx",
             vrm
           );
           animations.joy = await loadMixamoAnimation(
-            "./animations/Jump.fbx",
+            "../animations/Jump.fbx",
             vrm
           );
           animations.sorrow = await loadMixamoAnimation(
-            "./animations/Sad_Idle.fbx",
+            "../animations/Sad_Idle.fbx",
             vrm
           );
           animations.angry = await loadMixamoAnimation(
-            "./animations/Angry.fbx",
+            "../animations/Angry.fbx",
             vrm
           );
         } else {
@@ -163,10 +152,10 @@ export default function Three() {
           model.position.set(0, 100, 0);
           model.scale.set(0.08, 0.08, 0.08);
 
-          animations.idle = await LoadMMDAnim("./mmd/anim/idle.vmd", model);
-          animations.walk = await LoadMMDAnim("./mmd/anim/walk.vmd", model);
-          animations.joy = await LoadMMDAnim("./mmd/anim/わーい.vmd", model);
-          animations.sorrow = await LoadMMDAnim("./mmd/anim/えー.vmd", model);
+          animations.idle = await LoadMMDAnim("../mmd/anim/idle.vmd", model);
+          animations.walk = await LoadMMDAnim("../mmd/anim/walk.vmd", model);
+          animations.joy = await LoadMMDAnim("../mmd/anim/わーい.vmd", model);
+          animations.sorrow = await LoadMMDAnim("../mmd/anim/えー.vmd", model);
           animations.angry = await LoadMMDAnim(
             "./mmd/anim/なによっ.vmd",
             model

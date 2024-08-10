@@ -4,21 +4,13 @@ import { useActionData, useLoaderData, Form, redirect } from "@remix-run/react";
 import { useEffect, useRef, useCallback } from "react";
 import * as THREE from "three";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { createScene } from "~/utils/Three/createScene";
+import { createScene } from "~/utils/WebXR/createScene";
 import { LoadVRM } from "~/utils/VRM/LoadVRM";
 import { loadMixamoAnimation } from "~/utils/VRM/loadMixamoAnimation";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import NotFound from "~/components/ui/404";
-import {
-  Heart,
-  HeartOff,
-  Edit,
-  UserCheck,
-  Eye,
-  Mic,
-  EyeOffIcon,
-} from "lucide-react";
+import { Heart, HeartOff, Edit, Eye, Mic, EyeOffIcon } from "lucide-react";
 import { serverClient } from "~/utils/Supabase/ServerClient";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
@@ -41,7 +33,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
   const { data: currentUserData } = await supabase
     .from("profiles")
-    .select("id,avatar_url,full_name,current_character")
+    .select("id,avatar_url,full_name")
     .eq("id", currentUser?.id)
     .single();
 
@@ -85,17 +77,6 @@ export async function action({ params, request }: ActionFunctionArgs) {
     const model_id = formData.get("id");
 
     await supabase.from("favorites").delete().eq("model_id", model_id);
-
-    return null;
-  }
-
-  if (action === "use") {
-    const { error } = await supabase
-      .from("profiles")
-      .update({ current_character: id })
-      .eq("id", user.id);
-
-    if (!error) return "正常にキャラクターが更新されました！";
 
     return null;
   }
@@ -208,18 +189,22 @@ export default function Character() {
               {data.authorData.full_name} が投稿
             </h1>
           </a>
+
           {data.currentUser &&
-          data.character.postedby === data.currentUser.id &&
-          data.character.is_public ? (
-            <p className="font-bold flex">
-              <Eye className="mx-2" />
-              公開されています
-            </p>
+          data.character.postedby === data.currentUser.id ? (
+            data.character.is_public ? (
+              <p className="font-bold flex">
+                <Eye className="mx-2" />
+                公開されています
+              </p>
+            ) : (
+              <p className="font-bold flex">
+                <EyeOffIcon className="mx-2" />
+                公開されていません
+              </p>
+            )
           ) : (
-            <p className="font-bold flex">
-              <EyeOffIcon className="mx-2" />
-              公開されていません
-            </p>
+            ""
           )}
         </div>
 
@@ -244,21 +229,6 @@ export default function Character() {
             </Form>
           )}
 
-          {data.currentUserData?.current_character === data.character.id ? (
-            <p className="font-bold flex">
-              <UserCheck className="px-1" />
-              使用中
-            </p>
-          ) : (
-            <Form method="post">
-              <input type="hidden" name="action" value="use" />
-              <Button type="submit">
-                <UserCheck className="px-1" />
-                このキャラクターを使用
-              </Button>
-            </Form>
-          )}
-
           {data.currentUser &&
           data.character.postedby === data.currentUser.id ? (
             <a href={`/character/edit/${data.character.id}`}>
@@ -271,7 +241,7 @@ export default function Character() {
             ""
           )}
 
-          <a href="/talk">
+          <a href={`/talk/${data.character.id}`}>
             <Button>
               <Mic className="h-5 w-5" />
               <h1>MRでキャラクターとはなす</h1>
