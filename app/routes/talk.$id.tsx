@@ -110,7 +110,6 @@ export default function Three() {
 
     const character = data.character;
     const modelURL = character.model_url;
-    //const modelURL = "./mmd/桜乃そら/桜乃そら.pmx";
 
     const isVRM = modelURL.endsWith(".vrm");
 
@@ -157,7 +156,7 @@ export default function Three() {
           animations.joy = await LoadMMDAnim("../mmd/anim/わーい.vmd", model);
           animations.sorrow = await LoadMMDAnim("../mmd/anim/えー.vmd", model);
           animations.angry = await LoadMMDAnim(
-            "./mmd/anim/なによっ.vmd",
+            "../mmd/anim/なによっ.vmd",
             model
           );
         }
@@ -293,18 +292,10 @@ export default function Three() {
       const result = await setupNavMeshAndCrowd(grounds);
       ({ crowd, agent, navMeshQuery, lowestGround } = result);
 
-      let { controllerGrip1, controllerGrip2 } = setupControllers(
+      const { controllerGrip1, controllerGrip2 } = setupControllers(
         renderer,
         scene
       );
-
-      if (!controllerGrip1 || !controllerGrip2) {
-        const { controllerGrip1: grip1, controllerGrip2: grip2 } =
-          setupControllers(renderer, scene);
-
-        controllerGrip1 = grip1;
-        controllerGrip2 = grip2;
-      }
 
       controllerGrip1.addEventListener("selectstart", () => {
         audioChunks.length = 0;

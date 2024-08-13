@@ -8,7 +8,6 @@ import {
   SearchIcon,
   LogInIcon,
   LogOut,
-  Settings,
   UserIcon,
   Box,
   PlusIcon,
@@ -106,10 +105,6 @@ export default function Header(props: Props) {
                       <span>自分のキャラクター</span>
                     </DropdownMenuItem>
                   </a>
-                  <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>設定</span>
-                  </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>

@@ -9,6 +9,7 @@ import { Edit } from "lucide-react";
 import { serverClient } from "~/utils/Supabase/ServerClient";
 import DeleteConfirmDialog from "~/components/CharacterEdit/DeleteConfirmDialog";
 import SelectPublic from "~/components/CharacterEdit/SelectPublic";
+import { getCharacterFormValues } from "~/utils/Form/getCharacterFormValues";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -30,21 +31,20 @@ export async function action({ params, request }: ActionFunctionArgs) {
 
   const supabase = serverClient(request, response);
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return redirect("/login");
+
   const formData = await request.formData();
   const action = formData.get("action");
 
   if (action === "edit") {
-    const name = formData.get("name");
-    const model_url = formData.get("model_url");
-    const is_public = formData.get("is_public");
-    const firstperson = formData.get("firstperson");
-    const ending = formData.get("ending");
-    const details = formData.get("details");
-    const speaker_id = Number(formData.get("speakerID"));
+    const { name, is_public, firstperson, ending, details, speaker_id } =
+      getCharacterFormValues(formData);
 
     if (
       typeof name !== "string" ||
-      typeof model_url !== "string" ||
       typeof is_public !== "string" ||
       typeof speaker_id !== "number"
     )
@@ -54,7 +54,6 @@ export async function action({ params, request }: ActionFunctionArgs) {
       .from("characters")
       .update({
         name,
-        model_url,
         is_public,
         firstperson,
         ending,
@@ -69,6 +68,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
 
   if (action === "delete") {
     const { error } = await supabase.from("characters").delete().eq("id", id);
+    await supabase.storage.from("models").remove([`${user.id}/${id}.vrm`]);
 
     if (!error) return redirect(`/character/select`);
     return null;
@@ -98,18 +98,6 @@ export default function EditCharacter() {
             name="name"
             id="name"
             defaultValue={data.name}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="model_url">モデルURL</label>
-          <Input
-            type="text"
-            name="model_url"
-            id="model_url"
-            pattern="https?://\S+"
-            title="URLは、httpsで始まる絶対URLで記入してください。"
-            defaultValue={data.model_url}
             required
           />
         </div>

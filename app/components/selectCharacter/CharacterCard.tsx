@@ -15,14 +15,14 @@ type Props = {
 
 export default function CharacterCard(props: Props) {
   const [thumbnail, setThumbnail] = useState<string>("");
-  const [postedBy, setPostedBy] = useState<string>("");
+  const [userName, SetUserName] = useState<string>("");
 
   const { supabase } = useOutletContext<{
     supabase: SupabaseClient<Database>;
   }>();
   const created = useRef(false);
 
-  const setCardData = useCallback(async () => {
+  const setCardImage = useCallback(async () => {
     if (created.current) return;
     created.current = true;
 
@@ -36,25 +36,27 @@ export default function CharacterCard(props: Props) {
     };
 
     fetchThumbnail();
+  }, [props.model_url]);
 
-    const fetchUserName = async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("id", props.postedby)
-        .single();
+  const setCardText = useCallback(async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", props.postedby)
+      .single();
 
-      if (error || data.full_name == null) return;
+    if (!data) return;
 
-      setPostedBy(data.full_name);
-    };
-
-    fetchUserName();
-  }, [props.model_url, props.postedby]);
+    SetUserName(data.full_name);
+  }, [props.postedby, supabase]);
 
   useEffect(() => {
-    setCardData();
-  }, [setCardData]);
+    setCardImage();
+  }, [setCardImage]);
+
+  useEffect(() => {
+    setCardText();
+  }, [setCardText]);
 
   return (
     <a href={`../character/details/${props.id}`}>
@@ -76,7 +78,7 @@ export default function CharacterCard(props: Props) {
           <h3 className="text-lg font-semibold">{props.name}</h3>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <UserIcon className="w-4 h-4" />
-            <span>by {postedBy}</span>
+            <span>by {userName}</span>
           </div>
         </CardFooter>
       </Card>

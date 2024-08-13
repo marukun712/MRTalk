@@ -1,4 +1,4 @@
-import { Form } from "@remix-run/react";
+import { Form, useActionData } from "@remix-run/react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import {
@@ -11,6 +11,10 @@ import { Textarea } from "~/components/ui/textarea";
 import { PlusIcon } from "lucide-react";
 import { serverClient } from "~/utils/Supabase/ServerClient";
 import SelectPublic from "~/components/CharacterEdit/SelectPublic";
+import { getFileURL } from "~/utils/Supabase/getFileURL";
+import { getCharacterFormValues } from "~/utils/Form/getCharacterFormValues";
+import { useEffect } from "react";
+import { v4 } from "uuid";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -31,31 +35,43 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const supabase = serverClient(request, response);
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return redirect("/login");
+
   const formData = await request.formData();
 
-  const name = formData.get("name");
-  const model_url = formData.get("model_url");
-  const is_public = formData.get("is_public");
-  const firstperson = formData.get("firstperson");
-  const ending = formData.get("ending");
-  const details = formData.get("details");
-  const speaker_id = Number(formData.get("speakerID"));
+  const { name, model, is_public, firstperson, ending, details, speaker_id } =
+    getCharacterFormValues(formData);
 
   if (
     typeof name !== "string" ||
-    typeof model_url !== "string" ||
+    !model ||
     typeof is_public !== "string" ||
     typeof speaker_id !== "number"
   )
     return null;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const id = v4();
 
-  if (!user) return redirect("/login");
+  const extension = model.name.split(".").pop(); //.vrm.pngのような拡張子がチェックを通過しないように最後の要素を取得する
+  if (extension !== "vrm") {
+    return ".vrmのファイルのみアップロード可能です。";
+  } else {
+    const { error } = await supabase.storage
+      .from("models")
+      .upload(`${user?.id}/${id}.vrm`, model, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+    if (error) return "モデルのアップロードに失敗しました。";
+  }
+
+  const model_url = await getFileURL(`${user?.id}/${id}.vrm`, supabase);
 
   const { error } = await supabase.from("characters").insert({
+    id,
     name,
     model_url,
     is_public,
@@ -66,33 +82,34 @@ export async function action({ request }: ActionFunctionArgs) {
     postedby: user.id,
   });
 
-  console.log(error);
   if (!error) return redirect("/character/select");
   return null;
 }
 
 export default function AddCharacter() {
+  const message = useActionData<typeof loader>();
+
+  useEffect(() => {
+    if (!message || typeof message !== "string") return;
+    alert(message);
+  }, [message]);
+
   return (
     <div className="m-auto md:w-1/2 w-3/4 py-14">
       <h1 className="font-bold text-3xl py-10 text-center">
         キャラクターを投稿
       </h1>
 
-      <Form method="post" className="py-10">
+      <Form method="post" className="py-10" encType="multipart/form-data">
         <div>
           <label htmlFor="name">キャラクター名</label>
           <Input type="text" name="name" id="name" required />
         </div>
         <div>
-          <label htmlFor="model_url">モデルURL</label>
-          <Input
-            type="text"
-            name="model_url"
-            id="model_url"
-            pattern="https?://\S+"
-            title="URLは、httpsで始まる絶対URLで記入してください。"
-            required
-          />
+          <label htmlFor="model">
+            モデルを選択(VRM-1.xのモデルにのみ対応しています。)
+          </label>
+          <Input type="file" accept=".vrm" name="model" id="model" required />
         </div>
         <div>
           <label htmlFor="is_public">公開設定</label>

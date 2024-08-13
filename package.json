@@ -28,6 +28,7 @@
         "@supabase/supabase-js": "^2.44.2",
         "@types/cannon": "^0.1.12",
         "@types/three": "^0.166.0",
+        "@types/uuid": "^10.0.0",
         "@vercel/remix": "^2.10.2",
         "cannon": "^0.6.2",
         "class-variance-authority": "^0.7.0",
@@ -44,7 +45,8 @@
         "tailwind-merge": "^2.3.0",
         "tailwindcss-animate": "^1.0.7",
         "three": "^0.166.1",
-        "three-spritetext": "^1.8.2"
+        "three-spritetext": "^1.8.2",
+        "uuid": "^10.0.0"
     },
     "devDependencies": {
         "@remix-run/dev": "^2.10.0",
