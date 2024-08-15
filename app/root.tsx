@@ -4,9 +4,11 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  isRouteErrorResponse,
   json,
   useLoaderData,
   useRevalidator,
+  useRouteError,
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
 import stylesheet from "~/tailwind.css?url";
@@ -17,6 +19,7 @@ import { LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import Header from "./components/ui/header";
 import NotFound from "./components/ui/404";
 import { serverClient } from "./utils/Supabase/ServerClient";
+import ErrorPage from "./components/ui/ErrorPage";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
@@ -113,6 +116,8 @@ export default function App() {
 }
 
 export function ErrorBoundary() {
+  const error = useRouteError();
+
   return (
     <html lang="jp">
       <head>
@@ -123,7 +128,17 @@ export function ErrorBoundary() {
       </head>
       <body>
         <h1>
-          <NotFound />
+          {isRouteErrorResponse(error) ? (
+            error.status === 404 ? (
+              <NotFound />
+            ) : error instanceof Error ? (
+              <ErrorPage message={error.message} />
+            ) : (
+              <ErrorPage message={""} />
+            )
+          ) : (
+            <ErrorPage message={""} />
+          )}
         </h1>
         <Scripts />
       </body>
