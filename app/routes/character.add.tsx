@@ -15,6 +15,7 @@ import { getFileURL } from "~/utils/Supabase/getFileURL";
 import { getCharacterFormValues } from "~/utils/Form/getCharacterFormValues";
 import { useEffect } from "react";
 import { v4 } from "uuid";
+import { getVRMThumbnail } from "~/utils/VRM/getVRMThumbnail";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -51,7 +52,7 @@ export async function action({ request }: ActionFunctionArgs) {
     typeof is_public !== "string" ||
     typeof speaker_id !== "number"
   )
-    return null;
+    return "入力されたデータが不正です。";
 
   const id = v4();
 
@@ -61,19 +62,27 @@ export async function action({ request }: ActionFunctionArgs) {
   } else {
     const { error } = await supabase.storage
       .from("models")
-      .upload(`${user?.id}/${id}.vrm`, model, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+      .upload(`${user?.id}/${id}.vrm`, model);
     if (error) return "モデルのアップロードに失敗しました。";
   }
 
+  const thumbnail = await getVRMThumbnail(model);
+
+  if (thumbnail) {
+    const { error } = await supabase.storage
+      .from("models")
+      .upload(`${user?.id}/${id}.png`, thumbnail);
+    if (error) return "サムネイルのアップロードに失敗しました。";
+  }
+
   const model_url = await getFileURL(`${user?.id}/${id}.vrm`, supabase);
+  const thumbnail_url = await getFileURL(`${user?.id}/${id}.png`, supabase);
 
   const { error } = await supabase.from("characters").insert({
     id,
     name,
     model_url,
+    thumbnail_url,
     is_public,
     firstperson,
     ending,
@@ -105,12 +114,14 @@ export default function AddCharacter() {
           <label htmlFor="name">キャラクター名</label>
           <Input type="text" name="name" id="name" required />
         </div>
+
         <div>
           <label htmlFor="model">
             モデルを選択(VRM-1.xのモデルにのみ対応しています。)
           </label>
           <Input type="file" accept=".vrm" name="model" id="model" required />
         </div>
+
         <div>
           <label htmlFor="is_public">公開設定</label>
           <SelectPublic />

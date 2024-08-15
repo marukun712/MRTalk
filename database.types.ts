@@ -46,6 +46,7 @@ export type Database = {
           name: string
           postedby: string | null
           speaker_id: number
+          thumbnail_url: string | null
         }
         Insert: {
           created_at?: string
@@ -58,6 +59,7 @@ export type Database = {
           name: string
           postedby?: string | null
           speaker_id?: number
+          thumbnail_url?: string | null
         }
         Update: {
           created_at?: string
@@ -70,6 +72,7 @@ export type Database = {
           name?: string
           postedby?: string | null
           speaker_id?: number
+          thumbnail_url?: string | null
         }
         Relationships: [
           {

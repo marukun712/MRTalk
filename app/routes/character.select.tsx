@@ -17,7 +17,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const { data: myCharacter } = await supabase
     .from("characters")
-    .select("id,name,model_url,postedby")
+    .select("*")
     .eq("postedby", user.id);
 
   const { data: favorites } = await supabase
@@ -40,6 +40,7 @@ export default function SelectCharacter() {
               id={character.id}
               name={character.name}
               model_url={character.model_url}
+              thumbnail_url={character.thumbnail_url}
               key={character.id}
               postedby={character.postedby}
             />
@@ -54,6 +55,7 @@ export default function SelectCharacter() {
               id={favorite.characters.id}
               name={favorite.characters.name}
               model_url={favorite.characters.model_url}
+              thumbnail_url={favorite.characters.thumbnail_url}
               key={favorite.characters.id}
               postedby={favorite.characters.postedby}
             />

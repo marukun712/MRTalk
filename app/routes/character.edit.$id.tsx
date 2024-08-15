@@ -67,8 +67,9 @@ export async function action({ params, request }: ActionFunctionArgs) {
   }
 
   if (action === "delete") {
-    const { error } = await supabase.from("characters").delete().eq("id", id);
     await supabase.storage.from("models").remove([`${user.id}/${id}.vrm`]);
+    await supabase.storage.from("models").remove([`${user.id}/${id}.png`]);
+    const { error } = await supabase.from("characters").delete().eq("id", id);
 
     if (!error) return redirect(`/character/select`);
     return null;

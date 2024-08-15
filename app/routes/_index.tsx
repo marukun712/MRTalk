@@ -13,10 +13,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const supabase = serverClient(request, response);
 
-  return await supabase
-    .from("characters")
-    .select("id,name,model_url,postedby")
-    .limit(10);
+  return await supabase.from("characters").select("*").limit(10);
 }
 
 export default function Index() {
@@ -110,6 +107,7 @@ export default function Index() {
                 id={character.id}
                 name={character.name}
                 model_url={character.model_url}
+                thumbnail_url={character.thumbnail_url}
                 key={character.id}
                 postedby={character.postedby}
               />

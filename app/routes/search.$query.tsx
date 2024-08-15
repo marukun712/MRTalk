@@ -40,6 +40,7 @@ export default function Search() {
             id={character.id}
             name={character.name}
             model_url={character.model_url}
+            thumbnail_url={character.thumbnail_url}
             key={character.id}
             postedby={character.postedby}
           />
