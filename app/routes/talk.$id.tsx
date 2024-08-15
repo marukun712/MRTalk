@@ -31,6 +31,7 @@ import { Button } from "~/components/ui/button";
 import { serverClient } from "~/utils/Supabase/ServerClient";
 import { init, Crowd, CrowdAgent, NavMeshQuery } from "recast-navigation";
 import SpriteText from "three-spritetext";
+import { GamepadIcon, HandIcon } from "lucide-react";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -363,8 +364,47 @@ export default function Three() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>OpenAIのAPIキーを入力</DialogTitle>
+            <DialogTitle className="text-2xl">操作方法</DialogTitle>
             <div>
+              <p>
+                本アプリケーションは、コントローラーでの入力と、ハンドトラッキングでの入力に対応しています。
+                <br />
+                どちらかの操作方法が反応しない場合は、もう片方の操作方法に切り替えたり、ページをリロードしたりしてみてください。
+              </p>
+
+              <div className="flex py-4">
+                <GamepadIcon className="mx-2" />
+                <h1 className="text-xl font-bold">Quest3 コントローラー</h1>
+              </div>
+
+              <p>
+                <span className="font-bold">録音</span>
+                :左トリガーを <span className="font-bold">長押し</span>
+                している間、音声が録音されます。指を離すと、録音結果がキャラクターに送られます。
+              </p>
+              <p>
+                <span className="font-bold">キャラクターの巡回停止</span>
+                :右トリガーを押すと、キャラクターが巡回をやめて、その場に立ち止まります。もう一度押すと巡回を再開します。
+              </p>
+
+              <div className="flex py-4">
+                <HandIcon className="mx-2" />
+                <h1 className="text-xl font-bold">ハンドトラッキング</h1>
+              </div>
+
+              <p>
+                <span className="font-bold">録音</span>
+                :左手の親指と人差し指で
+                <span className="font-bold">つまむようにしている間</span>
+                、音声が録音されます。指を離すと、録音結果がキャラクターに送られます。
+              </p>
+              <p>
+                <span className="font-bold">キャラクターの巡回停止</span>
+                :右手の親指と人差し指でつまむようにすると、キャラクターが巡回をやめて、その場に立ち止まります。もう一度つまむようにすると巡回を再開します。
+              </p>
+
+              <h1 className="text-xl font-bold py-4">OpenAI APIキーを入力</h1>
+
               <Form
                 onSubmit={handleSubmit}
                 className="relative w-full max-w-md"
@@ -376,8 +416,13 @@ export default function Three() {
                   id="key"
                   pattern="^sk-[a-zA-Z0-9\-_]{1,}$"
                   title="OpenAI APIキーを入力してください!"
+                  required
                 />
-                <Button type="submit">Enter</Button>
+                <p>APIキーはOpenAIのサイトで取得できます。</p>
+                <p>返答の生成には、GPT4o-miniが使用されます。</p>
+                <Button type="submit" className="my-2">
+                  APIキーを入力してはじめる
+                </Button>
               </Form>
             </div>
           </DialogHeader>
