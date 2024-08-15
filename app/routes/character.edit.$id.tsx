@@ -67,8 +67,12 @@ export async function action({ params, request }: ActionFunctionArgs) {
   }
 
   if (action === "delete") {
-    await supabase.storage.from("models").remove([`${user.id}/${id}.vrm`]);
-    await supabase.storage.from("models").remove([`${user.id}/${id}.png`]);
+    await supabase.storage
+      .from("models")
+      .remove([`${user.id}/${id}_model.vrm`]);
+    await supabase.storage
+      .from("models")
+      .remove([`${user.id}/${id}_thumbnail.png`]);
     const { error } = await supabase.from("characters").delete().eq("id", id);
 
     if (!error) return redirect(`/character/select`);

@@ -15,7 +15,7 @@ import { getFileURL } from "~/utils/Supabase/getFileURL";
 import { getCharacterFormValues } from "~/utils/Form/getCharacterFormValues";
 import { useEffect } from "react";
 import { v4 } from "uuid";
-import { getVRMThumbnail } from "~/utils/VRM/getVRMThumbnail";
+import { checkVRMVersion, getVRMThumbnail } from "~/utils/VRM/getVRMMeta";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -54,6 +54,10 @@ export async function action({ request }: ActionFunctionArgs) {
   )
     return "入力されたデータが不正です。";
 
+  const vrmVersion = await checkVRMVersion(model);
+  if (!vrmVersion)
+    return "VRM 0.xのモデルには対応していません。VRM 1.xのモデルにのみ対応しています。";
+
   const id = v4();
 
   const extension = model.name.split(".").pop(); //.vrm.pngのような拡張子がチェックを通過しないように最後の要素を取得する
@@ -62,7 +66,7 @@ export async function action({ request }: ActionFunctionArgs) {
   } else {
     const { error } = await supabase.storage
       .from("models")
-      .upload(`${user?.id}/${id}.vrm`, model);
+      .upload(`${user?.id}/${id}_model.vrm`, model);
     if (error) return "モデルのアップロードに失敗しました。";
   }
 
@@ -71,12 +75,15 @@ export async function action({ request }: ActionFunctionArgs) {
   if (thumbnail) {
     const { error } = await supabase.storage
       .from("models")
-      .upload(`${user?.id}/${id}.png`, thumbnail);
+      .upload(`${user?.id}/${id}_thumbnail.png`, thumbnail);
     if (error) return "サムネイルのアップロードに失敗しました。";
   }
 
-  const model_url = await getFileURL(`${user?.id}/${id}.vrm`, supabase);
-  const thumbnail_url = await getFileURL(`${user?.id}/${id}.png`, supabase);
+  const model_url = await getFileURL(`${user?.id}/${id}_model.vrm`, supabase);
+  const thumbnail_url = await getFileURL(
+    `${user?.id}/${id}_thumbnail.png`,
+    supabase
+  );
 
   const { error } = await supabase.from("characters").insert({
     id,

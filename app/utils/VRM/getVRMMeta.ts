@@ -140,3 +140,24 @@ export async function getVRMThumbnail(file: File) {
   const result = getThumbnail(jsonData, ds.buffer, offset);
   if (result) return result;
 }
+
+export async function checkVRMVersion(file: File) {
+  const buf = await file.arrayBuffer();
+  const ds = new DataView(buf);
+
+  const glbMeta = getGLBMeta(ds);
+
+  if (glbMeta.magic !== MAGIC_glTF) {
+    console.warn("This file is not a GLB file.");
+    return;
+  }
+
+  const jsonData = getJSONData(ds);
+  if (!jsonData) return;
+
+  if (jsonData.json.extensions?.VRMC_vrm?.specVersion) {
+    return true;
+  } else {
+    return false;
+  }
+}
