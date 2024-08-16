@@ -13,9 +13,17 @@ import { serverClient } from "~/utils/Supabase/ServerClient";
 import SelectPublic from "~/components/CharacterEdit/SelectPublic";
 import { getFileURL } from "~/utils/Supabase/getFileURL";
 import { getCharacterFormValues } from "~/utils/Form/getCharacterFormValues";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { v4 } from "uuid";
 import { checkVRMVersion, getVRMThumbnail } from "~/utils/VRM/getVRMMeta";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -43,8 +51,16 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const formData = await request.formData();
 
-  const { name, model, is_public, firstperson, ending, details, speaker_id } =
-    getCharacterFormValues(formData);
+  const {
+    name,
+    model_type,
+    model,
+    is_public,
+    firstperson,
+    ending,
+    details,
+    speaker_id,
+  } = getCharacterFormValues(formData);
 
   if (
     typeof name !== "string" ||
@@ -54,36 +70,50 @@ export async function action({ request }: ActionFunctionArgs) {
   )
     return "入力されたデータが不正です。";
 
-  const vrmVersion = await checkVRMVersion(model);
-  if (!vrmVersion)
-    return "VRM 0.xのモデルには対応していません。VRM 1.xのモデルにのみ対応しています。";
-
   const id = v4();
+  let model_url: string;
+  let thumbnail_url: string;
 
-  const extension = model.name.split(".").pop(); //.vrm.pngのような拡張子がチェックを通過しないように最後の要素を取得する
-  if (extension !== "vrm") {
-    return ".vrmのファイルのみアップロード可能です。";
+  //VRMの場合
+  if (model_type === "VRM" && model instanceof File) {
+    const vrmVersion = await checkVRMVersion(model);
+
+    if (!vrmVersion)
+      return "VRM 0.xのモデルには対応していません。VRM 1.xのモデルにのみ対応しています。";
+
+    const extension = model.name.split(".").pop(); //.vrm.pngのような拡張子がチェックを通過しないように最後の要素を取得する
+    if (extension !== "vrm") {
+      return ".vrmのファイルのみアップロード可能です。";
+    } else {
+      const { error } = await supabase.storage
+        .from("models")
+        .upload(`${user?.id}/${id}_model.vrm`, model);
+      if (error) return "モデルのアップロードに失敗しました。";
+
+      const thumbnail = await getVRMThumbnail(model);
+
+      if (thumbnail) {
+        const { error } = await supabase.storage
+          .from("models")
+          .upload(`${user?.id}/${id}_thumbnail.png`, thumbnail);
+        if (error) return "サムネイルのアップロードに失敗しました。";
+      }
+
+      model_url = await getFileURL(`${user?.id}/${id}_model.vrm`, supabase);
+      thumbnail_url = await getFileURL(
+        `${user?.id}/${id}_thumbnail.png`,
+        supabase
+      );
+    }
   } else {
-    const { error } = await supabase.storage
-      .from("models")
-      .upload(`${user?.id}/${id}_model.vrm`, model);
-    if (error) return "モデルのアップロードに失敗しました。";
+    //MMDの場合
+    const url = model as unknown as string;
+
+    model_url = url;
+
+    thumbnail_url =
+      "https://www.silhouette-illust.com/wp-content/uploads/2019/10/person_46477-600x600.jpg";
   }
-
-  const thumbnail = await getVRMThumbnail(model);
-
-  if (thumbnail) {
-    const { error } = await supabase.storage
-      .from("models")
-      .upload(`${user?.id}/${id}_thumbnail.png`, thumbnail);
-    if (error) return "サムネイルのアップロードに失敗しました。";
-  }
-
-  const model_url = await getFileURL(`${user?.id}/${id}_model.vrm`, supabase);
-  const thumbnail_url = await getFileURL(
-    `${user?.id}/${id}_thumbnail.png`,
-    supabase
-  );
 
   const { error } = await supabase.from("characters").insert({
     id,
@@ -99,11 +129,13 @@ export async function action({ request }: ActionFunctionArgs) {
   });
 
   if (!error) return redirect("/character/select");
+
   return null;
 }
 
 export default function AddCharacter() {
   const message = useActionData<typeof loader>();
+  const [modelType, SetModelType] = useState<string>("VRM");
 
   useEffect(() => {
     if (!message || typeof message !== "string") return;
@@ -122,12 +154,37 @@ export default function AddCharacter() {
           <Input type="text" name="name" id="name" required />
         </div>
 
-        <div>
-          <label htmlFor="model">
-            モデルを選択(VRM-1.xのモデルにのみ対応しています。)
-          </label>
-          <Input type="file" accept=".vrm" name="model" id="model" required />
-        </div>
+        <label htmlFor="model_type">モデルの種類を選択</label>
+        <Select
+          name="model_type"
+          required
+          onValueChange={(e) => SetModelType(e)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="モデルの種類" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="VRM">VRM(.vrm)</SelectItem>
+            <SelectItem value="MMD">MMD(.pmx)</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {modelType === "VRM" ? (
+          <div>
+            <label htmlFor="model">
+              VRMモデルを選択(VRM-1.xのモデルにのみ対応しています。)
+            </label>
+            <Input type="file" accept=".vrm" name="model" id="model" required />
+          </div>
+        ) : (
+          <div>
+            <label htmlFor="model">MMDモデルのURLを指定</label>
+            <p className="py-2">
+              MMDモデルのアップロードには対応していません。WebサーバーなどにMMDモデルをアップロードして、そのURLを指定してください。また、モデルはクロスオリジンで配信されている必要があります。クロスオリジンで配信されていない場合、モデルが正常にロードされません。
+            </p>
+            <Input type="text" name="model" id="model" required />
+          </div>
+        )}
 
         <div>
           <label htmlFor="is_public">公開設定</label>

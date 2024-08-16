@@ -12,6 +12,8 @@ import { Button } from "~/components/ui/button";
 import NotFound from "~/components/ui/404";
 import { Heart, HeartOff, Edit, Eye, Mic, EyeOffIcon } from "lucide-react";
 import { serverClient } from "~/utils/Supabase/ServerClient";
+import { LoadMMD } from "~/utils/MMD/LoadMMD";
+import { LoadMMDAnim } from "~/utils/MMD/LoadMMDAnim";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -90,9 +92,6 @@ export default function Character() {
 
   const setupThree = useCallback(async () => {
     if (!data) {
-      alert(
-        "キャラクターデータの取得に失敗しました。キャラクターが設定されているか確認してください。"
-      );
       return;
     }
 
@@ -109,38 +108,52 @@ export default function Character() {
     const { scene, camera } = createScene(renderer);
     const clock = new THREE.Clock();
 
-    let idolAnim: THREE.AnimationClip;
-
-    let model: GLTF;
-    let currentMixer: THREE.AnimationMixer;
+    let model: GLTF | THREE.SkinnedMesh;
     let vrm: VRM;
+    let currentMixer: THREE.AnimationMixer;
 
-    //animation用のパラメータ
-    const params = {
-      timeScale: 1.0,
-    };
+    const character = data.character;
+    const modelURL = character.model_url;
 
-    if (!data || !data.character) return;
+    const isVRM = modelURL.endsWith(".vrm");
 
-    //VRMモデルの設定
-    try {
-      model = await LoadVRM(data.character.model_url);
-      vrm = model.userData.vrm;
-      scene.add(model.scene);
+    const animations: Record<string, THREE.AnimationClip> = {};
 
-      model.scene.position.x = 0;
-      model.scene.position.y = 0;
-      model.scene.position.z = 3;
+    async function loadCharacterModel() {
+      try {
+        if (isVRM) {
+          model = await LoadVRM(modelURL);
+          vrm = model.userData.vrm;
+          scene.add(model.scene);
 
-      currentMixer = new THREE.AnimationMixer(model.scene);
-      currentMixer.timeScale = params.timeScale;
+          model.scene.position.set(0, 0, 3);
 
-      idolAnim = await loadMixamoAnimation("../../animations/Dancing.fbx", vrm);
+          if (!vrm) return;
+          animations.idle = await loadMixamoAnimation(
+            "../../animations/Dancing.fbx",
+            vrm
+          );
+        } else {
+          model = await LoadMMD(modelURL);
+          scene.add(model);
+          model.position.set(0, 0, 3);
+          model.scale.set(0.08, 0.08, 0.08);
 
-      currentMixer.clipAction(idolAnim).play();
-    } catch (e) {
-      alert("キャラクターの読み込みに失敗しました。");
+          animations.idle = await LoadMMDAnim("../../mmd/anim/walk.vmd", model);
+        }
+
+        currentMixer = new THREE.AnimationMixer(
+          model instanceof THREE.SkinnedMesh ? model : model.scene
+        );
+
+        currentMixer.timeScale = 1.0;
+        currentMixer.clipAction(animations.idle).play();
+      } catch (e) {
+        alert("キャラクターの読み込みに失敗しました。");
+      }
     }
+
+    loadCharacterModel();
 
     function animate() {
       requestAnimationFrame(animate);

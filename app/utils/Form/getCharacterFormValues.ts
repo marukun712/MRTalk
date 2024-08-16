@@ -1,5 +1,6 @@
 export const getCharacterFormValues = (form: FormData) => {
   const name = form.get("name") as string;
+  const model_type = form.get("model_type") as string;
   const model = form.get("model") as File;
   const is_public = form.get("is_public") as string;
   const firstperson = form.get("firstperson") as string || null;
@@ -7,5 +8,14 @@ export const getCharacterFormValues = (form: FormData) => {
   const details = form.get("details") as string || null;
   const speaker_id = Number(form.get("speakerID"));
 
-  return { name, model, is_public, firstperson, ending, details, speaker_id };
+  return {
+    name,
+    model_type,
+    model,
+    is_public,
+    firstperson,
+    ending,
+    details,
+    speaker_id,
+  };
 };
