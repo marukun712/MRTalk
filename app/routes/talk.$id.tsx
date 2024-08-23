@@ -210,6 +210,8 @@ export default function Three() {
 
     function updateModelMovement() {
       if (agent && !talking && !talkMode) {
+        currentMixer.clipAction(animations.idle).stop();
+
         const agentPosition = new THREE.Vector3().copy(agent.position());
         const agentDestination = new THREE.Vector3().copy(agent.target());
 
@@ -362,7 +364,7 @@ export default function Three() {
   return (
     <div>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="overflow-y-scroll max-h-screen">
           <DialogHeader>
             <DialogTitle className="text-2xl">操作方法</DialogTitle>
             <div>

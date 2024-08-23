@@ -19,14 +19,17 @@ export async function action({ request }: ActionFunctionArgs) {
     }
     const audio_query = await audio_query_response.json();
 
-    const synthesis_response = await fetch(`${url}/synthesis?speaker=20`, {
-      method: "POST",
-      headers: {
-        accept: "audio/wav",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(audio_query),
-    });
+    const synthesis_response = await fetch(
+      `${url}/synthesis?speaker=${speaker}`,
+      {
+        method: "POST",
+        headers: {
+          accept: "audio/wav",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(audio_query),
+      }
+    );
     if (!synthesis_response.ok) {
       throw new Error(`Synthesis failed: ${synthesis_response.status}`);
     }
