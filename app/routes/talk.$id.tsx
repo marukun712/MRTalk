@@ -123,6 +123,27 @@ export default function Three() {
     let talking = false;
     let talkMode = false;
 
+    const { controllerGrip1, controllerGrip2 } = setupControllers(
+      renderer,
+      scene
+    );
+
+    controllerGrip1.addEventListener("selectstart", () => {
+      audioChunks.length = 0;
+      addFukidashi("録音中...");
+      mediaRecorder.start();
+    });
+
+    controllerGrip1.addEventListener("selectend", () => {
+      mediaRecorder.stop();
+      addFukidashi("録音完了 考え中...");
+    });
+
+    controllerGrip2.addEventListener("selectstart", () => {
+      talkMode = !talkMode;
+      changeTalkMode(talkMode);
+    });
+
     const character = data.character;
     const modelURL = character.model_url;
 
@@ -308,27 +329,6 @@ export default function Three() {
     xr.addEventListener("sessionstart", async () => {
       const result = await setupNavMeshAndCrowd(grounds);
       ({ crowd, agent, navMeshQuery, lowestGround } = result);
-
-      const { controllerGrip1, controllerGrip2 } = setupControllers(
-        renderer,
-        scene
-      );
-
-      controllerGrip1.addEventListener("selectstart", () => {
-        audioChunks.length = 0;
-        addFukidashi("録音中...");
-        mediaRecorder.start();
-      });
-
-      controllerGrip1.addEventListener("selectend", () => {
-        mediaRecorder.stop();
-        addFukidashi("録音完了 考え中...");
-      });
-
-      controllerGrip2.addEventListener("selectstart", () => {
-        talkMode = !talkMode;
-        changeTalkMode(talkMode);
-      });
 
       setInterval(() => {
         if (!talkMode) {
