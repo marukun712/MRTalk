@@ -22,7 +22,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const { data: favorites } = await supabase
     .from("favorites")
-    .select("characters(*)")
+    .select("characters(*, postedby(*))")
     .eq("user_id", user.id);
 
   return { myCharacter, favorites };
@@ -50,6 +50,7 @@ export default function SelectCharacter() {
 
       <CharacterList title="お気に入りのキャラクター">
         {data?.favorites?.map((favorite: any) => {
+          console.log(favorite);
           return (
             <CharacterCard
               id={favorite.characters.id}
