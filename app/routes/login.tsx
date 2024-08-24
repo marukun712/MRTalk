@@ -45,9 +45,7 @@ export default function Login() {
 
   return (
     <div className="m-auto md:w-1/2 w-3/4 py-14">
-      <h1 className="text-4xl font-bold text-center py-10">
-        TalkWithVRMにログイン
-      </h1>
+      <h1 className="text-4xl font-bold text-center py-10">MRTalkにログイン</h1>
       <Button onClick={handleGitHubLogin} className="my-6">
         <GitHubLogoIcon className="mx-2" />
         GitHub Login

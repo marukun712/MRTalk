@@ -53,7 +53,7 @@ export default function Header(props: Props) {
     <header className="bg-background shadow-sm sticky top-0 z-50">
       <div className="container max-w-6xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2 text-lg font-semibold">
-          <span>TalkWithVRM</span>
+          <span>MRTalk</span>
         </a>
 
         <form onSubmit={handleSubmit} className="relative w-full max-w-md">

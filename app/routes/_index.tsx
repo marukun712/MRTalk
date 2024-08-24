@@ -25,7 +25,7 @@ export default function Index() {
         <section className="bg-background py-12 md:py-20">
           <div className="container max-w-6xl mx-auto px-4 md:px-6 grid md:grid-cols-2 gap-8 items-center">
             <div className="space-y-4">
-              <h1 className="text-4xl md:text-6xl font-bold">TalkWithVRM</h1>
+              <h1 className="text-4xl md:text-6xl font-bold">MRTalk</h1>
               <p className="text-muted-foreground text-lg"></p>
               <div className="flex gap-8">
                 <a href="/character/add">

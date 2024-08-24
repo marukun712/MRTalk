@@ -28,8 +28,12 @@ export const links: LinksFunction = () => [
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "VRMと会話MR" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "MRTalk" },
+    {
+      name: "description",
+      content:
+        "MRTalkは、Oculus Quest3とWebブラウザだけで、VRMやMMDのキャラクターと現実世界で音声会話をすることができるWebアプリです。",
+    },
   ];
 };
 

@@ -50,7 +50,6 @@ export default function SelectCharacter() {
 
       <CharacterList title="お気に入りのキャラクター">
         {data?.favorites?.map((favorite: any) => {
-          console.log(favorite);
           return (
             <CharacterCard
               id={favorite.characters.id}
