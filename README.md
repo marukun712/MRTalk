@@ -1,40 +1,40 @@
-# Welcome to Remix!
+# MRTalk
 
-- 📖 [Remix docs](https://remix.run/docs)
+MRTalk は、Oculus Quest3 と Web ブラウザだけで、VRM や MMD のキャラクターと現実世界で音声会話をすることができる Web アプリです。
 
-## Development
+音声会話には、API を使用することができる OpenAI API キーが必要です。
 
-Run the dev server:
+# Features
 
-```shellscript
-npm run dev
+- 文字起こし API と GPT4o-mini を用いた音声会話
+- 平面検出によりキャラクターが移動可能範囲を認識
+- Three.js と WebXR Device API を用いた実装により Quest3 と標準ブラウザのみで実行可能
+- キャラクターは PC やスマホのブラウザから登録可能
+- キャラクターの公開/非公開を設定可能
+- VRM モデルのアップロード機能
+
+# Usage
+
+依存ライブラリのインストール。
+
+```
+yarn install
 ```
 
-## Deployment
+必要な認証情報を.env に記載。
 
-First, build your app for production:
+```
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
 
-```sh
-npm run build
+GITHUB_SECRET=
+GITHUB_CLIENT_ID=
+
+RESEND_API_KEY=
 ```
 
-Then run the app in production mode:
+開発サーバーの起動。
 
-```sh
-npm start
 ```
-
-Now you'll need to pick a host to deploy it to.
-
-### DIY
-
-If you're familiar with deploying Node applications, the built-in Remix app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-- `build/server`
-- `build/client`
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever css framework you prefer. See the [Vite docs on css](https://vitejs.dev/guide/features.html#css) for more information.
+yarn run dev
+```
