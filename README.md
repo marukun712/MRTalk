@@ -21,6 +21,12 @@ MRTalk は、Oculus Quest3 と Web ブラウザだけで、VRM や MMD のキャ
 yarn install
 ```
 
+DB の起動。
+
+```
+supabase start
+```
+
 必要な認証情報を.env に記載。
 
 ```
