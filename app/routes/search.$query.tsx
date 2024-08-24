@@ -18,7 +18,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
   return await supabase
     .from("characters")
-    .select("*")
+    .select("*,postedby(*)")
     .textSearch("name,details", queryKeyword);
 }
 
@@ -42,7 +42,7 @@ export default function Search() {
             model_url={character.model_url}
             thumbnail_url={character.thumbnail_url}
             key={character.id}
-            postedby={character.postedby}
+            postedby={character.postedby.full_name}
           />
         );
       })}

@@ -13,7 +13,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const supabase = serverClient(request, response);
 
-  return await supabase.from("characters").select("*").limit(10);
+  return await supabase.from("characters").select("*,postedby(*)").limit(10);
 }
 
 export default function Index() {
@@ -109,7 +109,7 @@ export default function Index() {
                 model_url={character.model_url}
                 thumbnail_url={character.thumbnail_url}
                 key={character.id}
-                postedby={character.postedby}
+                postedby={character.postedby.full_name}
               />
             );
           })}

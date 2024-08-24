@@ -20,7 +20,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
 
   const { data: character } = await supabase
     .from("characters")
-    .select("*")
+    .select("*,postedby(*)")
     .eq("postedby", id);
 
   const { data: userData } = await supabase
@@ -71,7 +71,7 @@ export default function Profile() {
                 model_url={character.model_url}
                 thumbnail_url={character.thumbnail_url}
                 key={character.id}
-                postedby={character.postedby}
+                postedby={character.postedby.full_name}
               />
             );
           })}
