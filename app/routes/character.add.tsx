@@ -262,7 +262,7 @@ export default function AddCharacter() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-xl m-auto">
-              <UploadIcon className="m-auto" />
+              <UploadIcon className="m-auto my-2" />
               <p className="text-center">アップロード中...</p>
             </DialogTitle>
           </DialogHeader>

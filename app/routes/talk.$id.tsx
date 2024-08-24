@@ -74,6 +74,21 @@ export default function Three() {
       return;
     }
 
+    const mediaRecorder = await setupMediaRecorder(
+      (event) => audioChunks.push(event.data),
+      async () => {
+        const blob = new Blob(audioChunks, { type: "audio/wav" });
+        const response = await fetch("/stt", {
+          method: "POST",
+          headers: { "Content-Type": "audio/wav" },
+          body: blob,
+        });
+
+        const result = await response.json();
+        if (result) talk(result);
+      }
+    );
+
     //WebXRを有効化
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -103,7 +118,6 @@ export default function Three() {
     let vrm: VRM;
     let currentMixer: THREE.AnimationMixer;
     let textbox: THREE.Sprite;
-    let mediaRecorder: MediaRecorder;
     const audioChunks: Blob[] = [];
 
     let talking = false;
@@ -315,21 +329,6 @@ export default function Three() {
         talkMode = !talkMode;
         changeTalkMode(talkMode);
       });
-
-      mediaRecorder = await setupMediaRecorder(
-        (event) => audioChunks.push(event.data),
-        async () => {
-          const blob = new Blob(audioChunks, { type: "audio/wav" });
-          const response = await fetch("/stt", {
-            method: "POST",
-            headers: { "Content-Type": "audio/wav" },
-            body: blob,
-          });
-
-          const result = await response.json();
-          if (result) talk(result);
-        }
-      );
 
       setInterval(() => {
         if (!talkMode) {

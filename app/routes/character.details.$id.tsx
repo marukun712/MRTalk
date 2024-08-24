@@ -1,7 +1,7 @@
 import { VRM } from "@pixiv/three-vrm";
 import { LoaderFunctionArgs, ActionFunctionArgs } from "@remix-run/node";
 import { useActionData, useLoaderData, Form, redirect } from "@remix-run/react";
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import * as THREE from "three";
 import { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { createScene } from "~/utils/WebXR/createScene";
@@ -10,10 +10,25 @@ import { loadMixamoAnimation } from "~/utils/VRM/loadMixamoAnimation";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import NotFound from "~/components/ui/404";
-import { Heart, HeartOff, Edit, Eye, Mic, EyeOffIcon } from "lucide-react";
+import {
+  Heart,
+  HeartOff,
+  Edit,
+  Eye,
+  Mic,
+  EyeOffIcon,
+  LoaderIcon,
+} from "lucide-react";
 import { serverClient } from "~/utils/Supabase/ServerClient";
 import { LoadMMD } from "~/utils/MMD/LoadMMD";
 import { LoadMMDAnim } from "~/utils/MMD/LoadMMDAnim";
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 
 export async function loader({ params, request }: LoaderFunctionArgs) {
   const response = new Response();
@@ -89,6 +104,7 @@ export default function Character() {
   const data = useLoaderData<typeof loader>();
   const result = useActionData<typeof action>();
   const initialized = useRef(false);
+  const [open, setOpen] = useState(true);
 
   const setupThree = useCallback(async () => {
     if (!data) {
@@ -148,6 +164,8 @@ export default function Character() {
 
         currentMixer.timeScale = 1.0;
         currentMixer.clipAction(animations.idle).play();
+
+        setOpen(false);
       } catch (e) {
         alert("キャラクターの読み込みに失敗しました。");
       }
@@ -282,6 +300,17 @@ export default function Character() {
 
         <h1 className="py-4">話者ID:{data.character.speaker_id}</h1>
       </div>
+
+      <Dialog open={open}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-xl m-auto">
+              <LoaderIcon className="m-auto my-2" />
+              <p className="text-center">読み込み中...</p>
+            </DialogTitle>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
