@@ -2,7 +2,7 @@
 
 [![technologies](https://skillicons.dev/icons?i=ts,tailwind,remix,threejs,supabase)](https://skillicons.dev)
 
-MRTalk は、Oculus Quest3 と Web ブラウザだけで、VRM や MMD のキャラクターと現実世界で音声会話をすることができる Web アプリです。
+MRTalk は、Meta Quest3 と Web ブラウザだけで、VRM や MMD のキャラクターと現実世界で音声会話をすることができる Web アプリです。
 
 音声会話には、API を使用することができる OpenAI API キーが必要です。
 

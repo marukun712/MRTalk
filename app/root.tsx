@@ -32,7 +32,7 @@ export const meta: MetaFunction = () => {
     {
       name: "description",
       content:
-        "MRTalkは、Oculus Quest3とWebブラウザだけで、VRMやMMDのキャラクターと現実世界で音声会話をすることができるWebアプリです。",
+        "MRTalkは、Meta Quest3とWebブラウザだけで、VRMやMMDのキャラクターと現実世界で音声会話をすることができるWebアプリです。",
     },
     {
       property: "og:image",
