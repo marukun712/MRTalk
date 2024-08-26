@@ -330,6 +330,13 @@ export default function Three() {
       const result = await setupNavMeshAndCrowd(grounds);
       ({ crowd, agent, navMeshQuery, lowestGround } = result);
 
+      //最初のポイントを指定
+      const { randomPoint: point } = navMeshQuery.findRandomPointAroundCircle(
+        new THREE.Vector3(),
+        1
+      );
+      agent.requestMoveTarget(point);
+
       setInterval(() => {
         if (!talkMode) {
           const { randomPoint: point } =
