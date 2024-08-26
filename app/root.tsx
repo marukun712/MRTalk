@@ -36,7 +36,8 @@ export const meta: MetaFunction = () => {
     },
     {
       property: "og:image",
-      content: "img/demo.png",
+      content:
+        "https://github.com/marukun712/MRTalk/raw/master/public/img/demo.png",
     },
   ];
 };
