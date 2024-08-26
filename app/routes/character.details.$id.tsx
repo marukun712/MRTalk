@@ -275,7 +275,7 @@ export default function Character() {
           <a href={`/talk/${data.character.id}`}>
             <Button>
               <Mic className="h-5 w-5" />
-              <h1>MRでキャラクターとはなす</h1>
+              <h1>MRでキャラクターとはなす(MRデバイスが必要です)</h1>
             </Button>
           </a>
         </div>

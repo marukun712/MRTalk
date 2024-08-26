@@ -21,8 +21,12 @@ export function setupNavMeshAndCrowd(grounds: Mesh[]) {
       });
 
       const { navMesh } = threeToSoloNavMesh(grounds);
-      console.log(navMesh);
-      if (!navMesh) return;
+      if (!navMesh) {
+        alert(
+          "キャラクターの移動可能範囲を取得できませんでした。Quest3側の設定で、スペースのスキャンを済ませているか、確認してください。",
+        );
+        return;
+      }
 
       const maxAgents = 1;
       const maxAgentRadius = 0.6;
@@ -39,8 +43,6 @@ export function setupNavMeshAndCrowd(grounds: Mesh[]) {
         pathOptimizationRange: 0.0,
         separationWeight: 1.0,
       });
-
-      console.log(agent);
 
       resolve({ crowd, agent, navMeshQuery, lowestGround });
     }, 5000);

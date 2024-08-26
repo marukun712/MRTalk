@@ -57,7 +57,7 @@ export function XRPlanes(xr: WebXRManager, scene: Scene) {
         const material = new MeshBasicMaterial({
           color: 0xffffff * Math.random(),
           transparent: true,
-          opacity: 0.4, //透明度を指定
+          opacity: 0, //透明度を指定
         });
 
         const mesh = new Mesh(geometry, material);
