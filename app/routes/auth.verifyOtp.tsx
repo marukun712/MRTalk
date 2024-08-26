@@ -28,7 +28,9 @@ export async function action({ request }: ActionFunctionArgs) {
       headers: response.headers,
     });
   } else {
-    return alert("ワンタイムパスワードが不正です!");
+    throw new Response("ワンタイムパスワードが不正です。", {
+      status: 403,
+    });
   }
 }
 

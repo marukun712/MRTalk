@@ -48,7 +48,7 @@ export default function Login() {
       <h1 className="text-4xl font-bold text-center py-10">MRTalkにログイン</h1>
       <Button onClick={handleGitHubLogin} className="my-6">
         <GitHubLogoIcon className="mx-2" />
-        GitHub Login
+        GitHubでログイン
       </Button>
 
       <Form method="post" className="py-10">
@@ -60,10 +60,13 @@ export default function Login() {
       </Form>
 
       <h1>
-        アカウントを持っていませんか?{" "}
+        ワンタイムパスワード認証は、すでにアカウントが存在するメールアドレスのみで使用できます。
+        <br />
+        アカウントをお持ちでない場合は、
         <a href="/signup" className="text-blue-400">
           サインアップ
         </a>
+        してください。
       </h1>
     </div>
   );

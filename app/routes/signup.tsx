@@ -26,7 +26,7 @@ export default function SignUp() {
 
       <Button onClick={handleGitHubLogin} className="my-6">
         <GitHubLogoIcon className="mx-2" />
-        GitHub Login
+        GitHubでサインアップ
       </Button>
     </div>
   );
