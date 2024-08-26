@@ -42,7 +42,7 @@ export default function Index() {
                 </a>
               </div>
               <div className="flex gap-8">
-                <a href="https://misskey-hub.net/share/?text=VRM%E3%83%A2%E3%83%87%E3%83%AB%E3%81%A8MR%E7%A9%BA%E9%96%93%E3%81%A7%E4%BC%9A%E8%A9%B1%E3%81%A7%E3%81%8D%E3%82%8B%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9&url=http:%2F%2Fexmaple.com&visibility=public&localOnly=0">
+                <a href="https://misskey-hub.net/share/?text=Oculus+Quest3%E3%81%A8Web%E3%83%96%E3%83%A9%E3%82%A6%E3%82%B6%E3%81%A0%E3%81%91%E3%81%A7%E3%80%81VRM%E3%82%84MMD%E3%81%AE%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC%E3%81%A8%E7%8F%BE%E5%AE%9F%E4%B8%96%E7%95%8C%E3%81%A7%E9%9F%B3%E5%A3%B0%E4%BC%9A%E8%A9%B1%E3%82%92%E3%81%99%E3%82%8B%E3%81%93%E3%81%A8%E3%81%8C%E3%81%A7%E3%81%8D%E3%82%8BWeb%E3%82%A2%E3%83%97%E3%83%AA+MRTalk&url=https:%2F%2Fmrtalk.vercel.app%2F&visibility=public&localOnly=0">
                   <Button className="bg-green-600">
                     <img
                       src="https://github.com/misskey-dev/assets/blob/main/public/icon.png?raw=true"
@@ -53,7 +53,7 @@ export default function Index() {
                     で共有
                   </Button>
                 </a>
-                <a href="https://donshare.net/share.html?textVRM%E3%83%A2%E3%83%87%E3%83%AB%E3%81%A8MR%E7%A9%BA%E9%96%93%E3%81%A7%E4%BC%9A%E8%A9%B1%E3%81%A7%E3%81%8D%E3%82%8B%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9&url=http:%2F%2Fexmaple.com">
+                <a href="https://donshare.net/share.html?text=Oculus+Quest3%E3%81%A8Web%E3%83%96%E3%83%A9%E3%82%A6%E3%82%B6%E3%81%A0%E3%81%91%E3%81%A7%E3%80%81VRM%E3%82%84MMD%E3%81%AE%E3%82%AD%E3%83%A3%E3%83%A9%E3%82%AF%E3%82%BF%E3%83%BC%E3%81%A8%E7%8F%BE%E5%AE%9F%E4%B8%96%E7%95%8C%E3%81%A7%E9%9F%B3%E5%A3%B0%E4%BC%9A%E8%A9%B1%E3%82%92%E3%81%99%E3%82%8B%E3%81%93%E3%81%A8%E3%81%8C%E3%81%A7%E3%81%8D%E3%82%8BWeb%E3%82%A2%E3%83%97%E3%83%AA+MRTalk&url=https:%2F%2Fmrtalk.vercel.app%2F">
                   <Button className="bg-blue-500">
                     <img
                       src="https://joinmastodon.org/logos/logo-purple.svg"
