@@ -21,6 +21,7 @@ export function setupNavMeshAndCrowd(grounds: Mesh[]) {
       });
 
       const { navMesh } = threeToSoloNavMesh(grounds);
+      console.log(navMesh);
       if (!navMesh) return;
 
       const maxAgents = 1;
@@ -38,6 +39,8 @@ export function setupNavMeshAndCrowd(grounds: Mesh[]) {
         pathOptimizationRange: 0.0,
         separationWeight: 1.0,
       });
+
+      console.log(agent);
 
       resolve({ crowd, agent, navMeshQuery, lowestGround });
     }, 5000);
