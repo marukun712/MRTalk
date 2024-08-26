@@ -6,6 +6,21 @@ MRTalk は、Oculus Quest3 と Web ブラウザだけで、VRM や MMD のキャ
 
 音声会話には、API を使用することができる OpenAI API キーが必要です。
 
+# DEMO
+
+![demo](public/img/demo.png)
+
+# 動作確認済み環境
+
+会話シーン
+
+- Meta Quest3
+
+キャラクターアップロード
+
+- Windows11
+- MacOS Sonoma 14.6.1
+
 # Features
 
 - 文字起こし API と GPT4o-mini を用いた音声会話

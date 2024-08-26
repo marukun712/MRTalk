@@ -365,6 +365,13 @@ export default function Three() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="overflow-y-scroll max-h-screen">
           <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">
+              会話モードは、MRデバイスでのみご利用いただけます。(Meta
+              Quest3のみ動作確認済み)
+              <br />
+              また、スペースのスキャンを終えていない場合、キャラクターが表示されない場合があります。必ずスペースのスキャンを完了させてから、アクセスしてください。
+            </DialogTitle>
+
             <DialogTitle className="text-2xl">操作方法</DialogTitle>
             <div>
               <p>

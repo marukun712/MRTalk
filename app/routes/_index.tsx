@@ -69,7 +69,7 @@ export default function Index() {
             </div>
             <div className="relative">
               <img
-                src="https://github.com/pixiv/three-vrm/raw/dev/three-vrm.png"
+                src="img/demo.png"
                 alt="three-vrm"
                 width={600}
                 height={600}

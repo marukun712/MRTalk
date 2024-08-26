@@ -10,7 +10,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
   const systemPrompt = `あなたの名前は「${json.name}」です。あなたの一人称は「${
     json.firstperson
-  }」です。あなたは必ず15単語以下で返答します。あなたはユーザーとフレンドリーに会話をします。${
+  }」です。あなたは必ず50単語以下で返答します。あなたはユーザーとフレンドリーに会話をします。${
     json.ending
       ? `あなたは、語尾に必ず「${json.ending}」を自然な形で付けます。`
       : ""
