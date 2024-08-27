@@ -162,23 +162,23 @@ export default function Three() {
 
           if (!vrm) return;
           animations.idle = await loadMixamoAnimation(
-            "../animations/Standing_Idle.fbx",
+            "https://fdlnzwemlgbxtbkryucp.supabase.co/storage/v1/object/public/models/animations/Standing_Idle.fbx",
             vrm
           );
           animations.walk = await loadMixamoAnimation(
-            "../animations/Walking.fbx",
+            "https://fdlnzwemlgbxtbkryucp.supabase.co/storage/v1/object/public/models/animations/Walking.fbx",
             vrm
           );
           animations.joy = await loadMixamoAnimation(
-            "../animations/Jump.fbx",
+            "https://fdlnzwemlgbxtbkryucp.supabase.co/storage/v1/object/public/models/animations/Jump.fbx",
             vrm
           );
           animations.sorrow = await loadMixamoAnimation(
-            "../animations/Sad_Idle.fbx",
+            "https://fdlnzwemlgbxtbkryucp.supabase.co/storage/v1/object/public/models/animations/Sad_Idle.fbx",
             vrm
           );
           animations.angry = await loadMixamoAnimation(
-            "../animations/Angry.fbx",
+            "https://fdlnzwemlgbxtbkryucp.supabase.co/storage/v1/object/public/models/animations/Angry.fbx",
             vrm
           );
         } else {

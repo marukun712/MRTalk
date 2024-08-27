@@ -146,7 +146,7 @@ export default function Character() {
 
           if (!vrm) return;
           animations.idle = await loadMixamoAnimation(
-            "../../animations/Dancing.fbx",
+            "https://fdlnzwemlgbxtbkryucp.supabase.co/storage/v1/object/public/models/animations/Dancing.fbx",
             vrm
           );
         } else {
